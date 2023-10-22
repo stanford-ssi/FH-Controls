@@ -13,7 +13,7 @@ ts = 0.1
 
 
 trajectory = Simulation(tf, ts, state_0).propogate()
-Graphing.plotter.plot_3DOF_trajectory(trajectory)
+Graphing.plotter.animate_3DOF_trajectory(trajectory)
 
 # CURRENT WORK
 # 1. Create simulation object, which then creates a rocket object and propogates

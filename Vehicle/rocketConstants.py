@@ -1,0 +1,1 @@
+ROCKET_MASS = 50

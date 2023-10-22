@@ -2,30 +2,31 @@
 
 import numpy as np
 import Vehicle.engine
-import Vehicle.mass
 import Vehicle.rocket
 
 # Constants
 g = 9.81
 
-def state_to_stateDot(state, t, rocket: Vehicle.rocket.Rocket):
+def state_to_stateDot(state, t, rocket):
 
     # Initialize
-    statedot = np.zeros(6)
+    rocket = rocket
 
     # Update Parameters:
-    throttle = 0.75
+    throttle = 0.2
     # theta_x = blah
     # theta_y = bleh
 
     # Thrust
-    rocket.engine.save_throttle()
+    rocket.engine.save_throttle(throttle)
     T = rocket.engine.get_thrust(t, throttle)
 
     # Mass
-    m = rocket.get_mass()
+    rocket.update_mass()
+    m = rocket.mass
     
-    # Move Velocity
+    # Build Statedot
+    statedot = np.zeros(6)
     statedot[0:3] = state[3:6]
 
     # Calculate Acceleration

@@ -10,14 +10,15 @@ class Engine:
         self.timestep = simulation_timestep
         self.burnDuration = Vehicle.engineConstants.ENGINE_BURN_DURATION
         self.thrustCurve = np.linspace(2500, 2500, num=int(self.burnDuration/dtThrustCurve)) #Eventually this will be data in constants file
+        self.thrustHistory = np.empty(shape=(0)) # The thrust curve we will fill up for integration (Just keep it this way it's easier than trying to reshape the origional thrust curve every time)
         
-        # Match Thrust Curve Indicies to simulation steprate
-        interpolation_function = interp1d(np.arange(len(self.thrustCurve)), self.thrustCurve, kind='linear')
-        new_indices = np.linspace(0, len(self.thrustCurve) - 1, int(self.burnDuration/self.timestep))  # Change 10 to the desired number of indices
-        self.thrustCurve = interpolation_function(new_indices)
-
         # Initialize empty list to save throttle history in, to be used for calculating mass of rocket at a given time
-        self.throttleHistory = np.array((0,0))
+        self.throttleHistory = np.empty(shape=(0))
+        self.throttle = 1
+        self.thetaxHistory = np.empty(shape=(0))
+        self.thetax = 0
+        self.thetayHistory = np.empty(shape=(0))
+        self.thetay = 0
 
         # Masses
         self.drymass = Vehicle.engineConstants.ENGINE_DRYMASS
@@ -46,7 +47,22 @@ class Engine:
     
     def save_throttle(self, throttle):
         """ Takes in the current Throttle and saves it into the throttle history"""
-        np.append(self.throttleHistory, throttle)
+        self.throttleHistory = np.append(self.throttleHistory, throttle)
+        self.throttle = throttle
+
+    def save_thetaX(self, theta_x):
+        """ Takes in the current Throttle and saves it into the throttle history"""
+        self.thetaxHistory = np.append(self.thetaxHistory, theta_x)
+        self.thetax = theta_x
+
+    def save_thetaY(self, theta_y):
+        """ Takes in the current Throttle and saves it into the throttle history"""
+        self.thetayHistory = np.append(self.thetayHistory, theta_y)
+        self.thetay = theta_y
+        
+    def save_thrust(self, thrust):
+        """ Takes in the current Thrust and saves it into the thrust history"""
+        self.thrustHistory = np.append(self.thrustHistory, thrust)
         
     def pull_throttle_history(self):
         pass

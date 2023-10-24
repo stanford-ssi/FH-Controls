@@ -3,6 +3,7 @@
 import numpy as np
 import Vehicle.engine
 import Vehicle.rocket
+import Control.throttle
 
 # Constants
 g = 9.81
@@ -17,13 +18,17 @@ def wrapper_state_to_stateDot(t, state, rocket, ideal_trajectory, t_vec):
     if (t == 0) or (t >= t_vec[currStep] and previous_time < t_vec[currStep]):
             
         # FIND ACTUATOR ADJUSTMENTS
-        #ideal_state = ideal_trajectory[idx]
-        throttle = 0.6
-        # theta_x = blah
-        # theta_y = bleh
+        ideal_state = ideal_trajectory[currStep]
+        error = ideal_state - state[0:3]
+        throttle = Control.throttle.getThrottle(rocket.engine.throttle, error)
+        theta_x = 0.0
+        theta_y = 0.0
+
 
         # Log Current States
         rocket.engine.save_throttle(throttle)
+        rocket.engine.save_thetaX(theta_x)
+        rocket.engine.save_thetaY(theta_y)
         rocket.engine.save_thrust(rocket.engine.get_thrust(t, throttle))
         rocket.update_mass(t)
 
@@ -40,12 +45,14 @@ def state_to_stateDot(t, state, rocket):
     throttle = rocket.engine.throttle
     T = rocket.engine.get_thrust(t, throttle)
     m = rocket.mass
+    thetaX = rocket.engine.thetax
+    thetaY = rocket.engine.thetay
     
     # Build Statedot
     statedot = np.zeros(6)
     statedot[0:3] = state[3:6]
 
     # Calculate Acceleration
-    statedot[3:6] = [0,0, (T / m) - g]
+    statedot[3:6] = [T * np.sin(thetaX), T * np.sin(thetaY), (T * np.cos(thetaX) / m) - g]
     return statedot
 

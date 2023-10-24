@@ -7,7 +7,7 @@ from PathPlanner.plan import PlannedTrajectory
 
 # State is of form x y z xdot ydot zdot totalmass throttle
 state_0 = np.array([0, 0, 0, 0, 0, 0])
-tf = 1
+tf = 2
 ts = 0.1
 
 planned_trajectory = PlannedTrajectory(5, 50, 5, 5, [25, 25, 0], ts).trajectory
@@ -17,7 +17,6 @@ trajectory = sim.propogate()
 mass = sim.rocket.massHistory
 throttle = sim.rocket.engine.throttleHistory
 Graphing.plotter.animate_3DOF_trajectory(trajectory)
-breakpoint()
 
 
 # CURRENT WORK

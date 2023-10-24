@@ -15,6 +15,10 @@ class Engine:
         # Initialize empty list to save throttle history in, to be used for calculating mass of rocket at a given time
         self.throttleHistory = np.empty(shape=(0))
         self.throttle = 1
+        self.thetaxHistory = np.empty(shape=(0))
+        self.thetax = 0
+        self.thetayHistory = np.empty(shape=(0))
+        self.thetay = 0
 
         # Masses
         self.drymass = Vehicle.engineConstants.ENGINE_DRYMASS
@@ -45,6 +49,16 @@ class Engine:
         """ Takes in the current Throttle and saves it into the throttle history"""
         self.throttleHistory = np.append(self.throttleHistory, throttle)
         self.throttle = throttle
+
+    def save_thetaX(self, theta_x):
+        """ Takes in the current Throttle and saves it into the throttle history"""
+        self.thetaxHistory = np.append(self.thetaxHistory, theta_x)
+        self.thetax = theta_x
+
+    def save_thetaY(self, theta_y):
+        """ Takes in the current Throttle and saves it into the throttle history"""
+        self.thetayHistory = np.append(self.thetayHistory, theta_y)
+        self.thetay = theta_y
         
     def save_thrust(self, thrust):
         """ Takes in the current Thrust and saves it into the thrust history"""

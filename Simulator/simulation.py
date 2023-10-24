@@ -13,6 +13,7 @@ class Simulation:
         self.timefinal = timefinal
         self.t_prev = 0
         self.ideal_trajectory = planned_trajectory
+        self.errorHistory = np.empty((0))
         
     def propogate(self):
         """ Simple propogator

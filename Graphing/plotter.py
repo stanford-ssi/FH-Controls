@@ -42,3 +42,6 @@ def animate_3DOF_trajectory(trajectory):
 
     # Show Animation
     plt.show()
+
+def plot_mass(mass, ts):
+    

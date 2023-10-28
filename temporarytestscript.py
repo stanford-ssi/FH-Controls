@@ -12,11 +12,11 @@ ts = 0.1
 
 planned_trajectory = PlannedTrajectory(5, 50, 5, 5, [25, 25, 0], ts).trajectory
 sim = Simulation(tf, ts, state_0, planned_trajectory)
-
+# breakpoint()
 trajectory = sim.propogate()
 mass = sim.rocket.massHistory
 throttle = sim.rocket.engine.throttleHistory
-Graphing.plotter.animate_3DOF_trajectory(trajectory)
+Graphing.plotter.animate_3DOF_trajectory(trajectory, planned_trajectory)
 
 
 # CURRENT WORK

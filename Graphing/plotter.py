@@ -43,5 +43,32 @@ def animate_3DOF_trajectory(trajectory):
     # Show Animation
     plt.show()
 
-def plot_mass(mass, ts):
-    
+#mass vs ts plot using matplotlib
+
+def plot_mass(mass, ts, tf):
+
+    fig, ax = plt.subplots()
+
+    t = np.linspace(0, tf, int(tf/ts)+1)
+
+    ax.plot(t, mass)
+
+    ax.set_title("Mass vs. Time")
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Mass")
+
+    plt.show()
+
+def plot_throttle(throttle, ts, tf):
+
+    fig, ax = plt.subplots()
+
+    t = np.linspace(0, tf, int(tf/ts)+1)
+
+    ax.plot(t, throttle)
+
+    ax.set_title("Throttle vs. Time")
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Throttle")
+
+    plt.show()

@@ -22,5 +22,6 @@ Graphing.plotter.animate_3DOF_trajectory(trajectory)
 # CURRENT WORK
 # 1. Create simulation object, which then creates a rocket object and propogates
 
+Graphing.plotter.plot_mass(mass, ts, tf)
 
 

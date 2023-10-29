@@ -6,7 +6,7 @@ def animate_3DOF_trajectory(trajectory, planned_trajectory):
     """ Animate 3DOF Plot for 3DOF Trajectory """
     
     # Set up Graph
-    fig = plt.figure()
+    fig = plt.figure(1)
     ax = fig.add_subplot(111, projection='3d')
     
     # Plot Placeholder
@@ -58,6 +58,20 @@ def animate_3DOF_trajectory(trajectory, planned_trajectory):
     ani = FuncAnimation(fig, update, frames=range(len(planned_trajectory)), init_func=init, blit=True)
 
     # Show Animation
+    plt.show()
+
+def plot_error(errorHistory):
+    # Compute norm of each error vector
+    error_norms = np.linalg.norm(errorHistory, axis=1)
+    # get array of time steps
+    t_array = np.array([i for i in range(error_norms.shape[0])])
+
+    # Plot error history
+    fig = plt.figure(2)
+    plt.plot(t_array, error_norms)
+    plt.xlabel("Time")
+    plt.ylabel("Error Norm")
+    plt.title("Error vs. Time")
     plt.show()
 
 #mass vs ts plot using matplotlib

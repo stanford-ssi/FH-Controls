@@ -17,6 +17,8 @@ trajectory = sim.propogate()
 mass = sim.rocket.massHistory
 throttle = sim.rocket.engine.throttleHistory
 Graphing.plotter.animate_3DOF_trajectory(trajectory, planned_trajectory)
+# plot the error history
+Graphing.plotter.plot_error(errorHistory=sim.errorHistory)
 
 
 # CURRENT WORK

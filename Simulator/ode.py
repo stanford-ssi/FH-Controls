@@ -11,6 +11,7 @@ g = 9.81
 def wrapper_state_to_stateDot(t, state, rocket, ideal_trajectory, t_vec):
     global previous_time
     global currStep
+    dt = t_vec[1] - t_vec[0]
     if t == 0:
         currStep = 0
 
@@ -30,8 +31,8 @@ def wrapper_state_to_stateDot(t, state, rocket, ideal_trajectory, t_vec):
         rocket.engine.save_thetaX(theta_x)
         rocket.engine.save_thetaY(theta_y)
         rocket.engine.save_thrust(rocket.engine.get_thrust(t, throttle))
-        rocket.update_mass(t)
-
+        rocket.update_mass(dt)
+     
         if not t == t_vec[-1]:
             currStep += 1
 

@@ -45,7 +45,7 @@ class PlannedTrajectory:
     def descent_portion(self):
         # For now, simple linear ascent profile
         final_time = int(self.descent_time/self.dt)*self.dt
-        t = np.linspace(0, final_time, num=int(self.descent_time/self.dt))
+        t = np.linspace(0, final_time, num=int(self.descent_time/self.dt) + 1)
         x = np.full(len(t), self.target[0])
         y = np.full(len(t), self.target[1])
         z = (-1 * self.max_altitude / final_time) * t + self.max_altitude

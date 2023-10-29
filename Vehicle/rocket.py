@@ -10,10 +10,10 @@ class Rocket:
         # Create Engine Object inside Rocket
         self.engine = Vehicle.engine.Engine(simulation_timestep)
         self.mass_noEngine = Vehicle.rocketConstants.ROCKET_MASS
-        self.mass = self.mass_noEngine + self.engine.fullMass #Rocket Starts Fully Fueled
+        self.mass = self.mass_noEngine + self.engine.full_mass #Rocket Starts Fully Fueled
         self.massHistory = np.empty(shape=(0))
         
-    def update_mass(self, t):
+    def update_mass(self, dt):
         """ Outputs the expected mass based on it
         
         Inputs:
@@ -23,13 +23,6 @@ class Rocket:
             mass = mass of rocket at current query time
             
         """
-        # Pull Data
-        throttle_history = self.engine.throttleHistory
-        thrust_curve = self.engine.thrustCurve      
-
-        # Define a scaling constant for my shitty T~mdot assumption and calculate
-        if len(throttle_history) > 1:
-            constant = 0.0001
-            self.engine.mass -= cumtrapz(constant * throttle_history * self.engine.thrustHistory)[0] * t
-            self.mass = self.mass_noEngine + self.engine.mass
+        self.engine.mass -= (self.engine.thrust / self.engine.thrust_mass_constant) * dt
+        self.mass = self.mass_noEngine + self.engine.mass
         self.massHistory = np.append(self.massHistory, self.mass)

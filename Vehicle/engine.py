@@ -6,24 +6,26 @@ class Engine:
     """ Class Representing the Engine and associated data"""
     def __init__(self, simulation_timestep):
         # For now, Constant thrust curve determined here, will later be a file from prop that will be imported
-        dtThrustCurve = 0.1 # Seconds
+        dt_thrust_curve = 0.1 # Seconds
         self.timestep = simulation_timestep
-        self.burnDuration = Vehicle.engineConstants.ENGINE_BURN_DURATION
-        self.thrustCurve = np.linspace(2500, 2500, num=int(self.burnDuration/dtThrustCurve)) #Eventually this will be data in constants file
-        self.thrustHistory = np.empty(shape=(0)) # The thrust curve we will fill up for integration (Just keep it this way it's easier than trying to reshape the origional thrust curve every time)
-        
+        self.burn_duration = Vehicle.engineConstants.ENGINE_BURN_DURATION
+        self.thrust_mass_constant = Vehicle.engineConstants.TRUST_2_MASS_CONSTANT
+        self.thrust_curve = np.linspace(2500, 2500, num=int(self.burn_duration/dt_thrust_curve)) #Eventually this will be data in constants file
+        self.thrust_history = np.empty(shape=(0)) # The thrust curve we will fill up for integration (Just keep it this way it's easier than trying to reshape the origional thrust curve every time)
+        self.thrust = self.thrust_curve[0]
+
         # Initialize empty list to save throttle history in, to be used for calculating mass of rocket at a given time
-        self.throttleHistory = np.empty(shape=(0))
+        self.throttle_history = np.empty(shape=(0))
         self.throttle = 1
-        self.thetaxHistory = np.empty(shape=(0))
+        self.thetax_history = np.empty(shape=(0))
         self.thetax = 0
-        self.thetayHistory = np.empty(shape=(0))
+        self.thetay_history = np.empty(shape=(0))
         self.thetay = 0
 
         # Masses
         self.drymass = Vehicle.engineConstants.ENGINE_DRYMASS
-        self.fullMass = Vehicle.engineConstants.ENGINE_FULL_MASS
-        self.mass = self.fullMass
+        self.full_mass = Vehicle.engineConstants.ENGINE_FULL_MASS
+        self.mass = self.full_mass
 
     def get_thrust(self, t, throttle):
         """ Takes in a query time and a throttle percentage and outputs the thrust based on the thrust curve
@@ -38,7 +40,8 @@ class Engine:
         """
 
         # Calculate Thrust at given time
-        maxThrust = self.thrustCurve[int(t/self.timestep)]
+        maxThrust = self.thrust_curve[int(t/self.timestep)]
+        self.thrust = maxThrust
 
         # Apply Throttling
         Thrust = maxThrust * throttle
@@ -47,22 +50,22 @@ class Engine:
     
     def save_throttle(self, throttle):
         """ Takes in the current Throttle and saves it into the throttle history"""
-        self.throttleHistory = np.append(self.throttleHistory, throttle)
+        self.throttle_history = np.append(self.throttle_history, throttle)
         self.throttle = throttle
 
     def save_thetaX(self, theta_x):
         """ Takes in the current Throttle and saves it into the throttle history"""
-        self.thetaxHistory = np.append(self.thetaxHistory, theta_x)
+        self.thetax_history = np.append(self.thetax_history, theta_x)
         self.thetax = theta_x
 
     def save_thetaY(self, theta_y):
         """ Takes in the current Throttle and saves it into the throttle history"""
-        self.thetayHistory = np.append(self.thetayHistory, theta_y)
+        self.thetay_history = np.append(self.thetay_history, theta_y)
         self.thetay = theta_y
         
     def save_thrust(self, thrust):
         """ Takes in the current Thrust and saves it into the thrust history"""
-        self.thrustHistory = np.append(self.thrustHistory, thrust)
+        self.thrust_history = np.append(self.thrust_history, thrust)
         
     def pull_throttle_history(self):
         pass

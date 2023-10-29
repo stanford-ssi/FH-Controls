@@ -11,19 +11,13 @@ tf = 15
 ts = 0.1
 
 planned_trajectory = PlannedTrajectory(tf/3, 50, tf/3, tf/3, [25, 25, 0], ts).trajectory
-breakpoint()
 sim = Simulation(tf, ts, state_0, planned_trajectory)
-# breakpoint()
+
 trajectory = sim.propogate()
 mass = sim.rocket.massHistory
 throttle = sim.rocket.engine.throttle_history
 Graphing.plotter.animate_3DOF_trajectory(trajectory, planned_trajectory)
-# plot the error history
 Graphing.plotter.plot_error(errorHistory=sim.errorHistory)
-
-# CURRENT WORK
-# 1. Create simulation object, which then creates a rocket object and propogates
-
 Graphing.plotter.plot_mass(mass, ts, tf)
 
 

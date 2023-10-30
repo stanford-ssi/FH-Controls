@@ -16,7 +16,7 @@ class Engine:
 
         # Initialize empty list to save throttle history in, to be used for calculating mass of rocket at a given time
         self.throttle_history = np.empty(shape=(0))
-        self.throttle = 1
+        self.throttle = 0
         self.thetax_history = np.empty(shape=(0))
         self.thetax = 0
         self.thetay_history = np.empty(shape=(0))

@@ -21,13 +21,13 @@ class PlannedTrajectory:
         # Write Vertical Portion
         vertical_states = self.vertical_portion()
         hoover_states = self.hoover_portion()
-        descent_states = self.descent_portion()
-        return(np.concatenate((vertical_states, hoover_states, descent_states), axis=0))
+        #descent_states = self.descent_portion()
+        return(np.concatenate((vertical_states, hoover_states), axis=0))
 
     def vertical_portion(self):
         # For now, simple linear ascent profile
         final_time = int(self.ascent_time/self.dt)*self.dt
-        t = np.linspace(0, final_time, num=int(self.ascent_time/self.dt))
+        t = np.linspace(0, final_time, num=int(self.ascent_time/self.dt) + 1)
         x = np.zeros(len(t))
         y = np.zeros(len(t))
         z = (self.max_altitude / final_time) * t
@@ -37,16 +37,16 @@ class PlannedTrajectory:
         # For now, simple linear ascent profile
         final_time = int(self.hover_time/self.dt)*self.dt
         t = np.linspace(0, final_time, num=int(self.hover_time/self.dt))
-        x = (self.target[0] / final_time) * t
-        y = (self.target[1] / final_time) * t
+        x = np.zeros(len(t))#(self.target[0] / final_time) * t
+        y = np.zeros(len(t))#(self.target[1] / final_time) * t
         z = np.full(len(t), self.max_altitude)
         return(np.column_stack((x, y, z)))
 
     def descent_portion(self):
         # For now, simple linear ascent profile
         final_time = int(self.descent_time/self.dt)*self.dt
-        t = np.linspace(0, final_time, num=int(self.descent_time/self.dt) + 1)
-        x = np.full(len(t), self.target[0])
-        y = np.full(len(t), self.target[1])
+        t = np.linspace(0, final_time, num=int(self.descent_time/self.dt))
+        x = np.zeros(len(t))#np.full(len(t), self.target[0])
+        y = np.zeros(len(t))#np.full(len(t), self.target[1])
         z = (-1 * self.max_altitude / final_time) * t + self.max_altitude
         return(np.column_stack((x, y, z)))

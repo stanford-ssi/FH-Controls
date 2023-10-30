@@ -65,12 +65,11 @@ def plot_error(errorHistory):
     error_norms = np.linalg.norm(errorHistory, axis=1)
     # get array of time steps
     t_array = np.array([i for i in range(error_norms.shape[0])])
-
     # Plot error history
     fig = plt.figure(2)
-    plt.plot(t_array, error_norms)
+    plt.plot(t_array, errorHistory[:,2])
     plt.xlabel("Time")
-    plt.ylabel("Error Norm")
+    plt.ylabel("Z Error")
     plt.title("Error vs. Time")
     plt.show()
 

@@ -67,13 +67,14 @@ class Simulation:
             throttle = Control.throttle.getThrottle(rocket.engine.throttle, error)
             theta_x = 0.0
             theta_y = 0.0
-
+            dt = t_vec[1] - t_vec[0]
+            
             # Log Current States
             rocket.engine.save_throttle(throttle)
             rocket.engine.save_thetaX(theta_x)
             rocket.engine.save_thetaY(theta_y)
             rocket.engine.save_thrust(rocket.engine.get_thrust(t, throttle))
-            rocket.update_mass(t)
+            rocket.update_mass(dt)
 
             if not t == t_vec[-1]:
                 currStep += 1

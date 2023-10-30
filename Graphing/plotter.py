@@ -60,28 +60,13 @@ def animate_3DOF_trajectory(trajectory, planned_trajectory):
     # Show Animation
     plt.show()
 
-def plot_Z_error(errorHistory):
-    # Compute norm of each error vector
-    error_norms = np.linalg.norm(errorHistory, axis=1)
-    # get array of time steps
-    t_array = np.array([i for i in range(error_norms.shape[0])])
-    # Plot error history
-    fig = plt.figure(2)
-    plt.plot(t_array, errorHistory[:,2])
-    plt.xlabel("Time")
-    plt.ylabel("Z Error")
-    plt.title("Error vs. Time")
-    plt.show()
-
-#mass vs ts plot using matplotlib
-
 def plot_variable_vs_time(var, ts, tf, name='INSERT NAME HERE'):
 
     fig, ax = plt.subplots()
 
     t = np.linspace(0, tf, int(tf/ts)+1)
 
-    ax.plot(t, var)
+    ax.plot(t[0:len(var)], var)
 
     ax.set_title("%s vs Time"%name)
     ax.set_xlabel("Time")

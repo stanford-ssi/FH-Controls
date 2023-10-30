@@ -46,8 +46,15 @@ class Simulation:
         t_span = np.linspace(0, int(tf/ts)*ts, num=int(tf/ts)+1)
         t = (0,self.timefinal)
 
-        # Propogate given ODE
-        solution = scipy.integrate.solve_ivp(self.wrapper_state_to_stateDot, t, state, args=(self.rocket, self.ideal_trajectory, t_span), t_eval=t_span, max_step=ts/5)
+        # Propogate given ODE, stop when rocket crashes as indicated by this here event function
+        def event(t,y,r,it,tt):
+            if t < 2 * ts:
+                return 1
+            else:
+                return 1#y[2]
+        event.terminal=True
+        event.direction=-1
+        solution = scipy.integrate.solve_ivp(self.wrapper_state_to_stateDot, t, state, args=(self.rocket, self.ideal_trajectory, t_span), t_eval=t_span, max_step=ts/5, events=event)
         return solution['y'].T
 
     def wrapper_state_to_stateDot(self, t, state, rocket, ideal_trajectory, t_vec):

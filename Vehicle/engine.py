@@ -9,7 +9,7 @@ class Engine:
         dt_thrust_curve = 0.1 # Seconds
         self.timestep = simulation_timestep
         self.burn_duration = Vehicle.engineConstants.ENGINE_BURN_DURATION
-        self.thrust_mass_constant = Vehicle.engineConstants.TRUST_2_MASS_CONSTANT
+        self.exhaust_velocity = Vehicle.engineConstants.EXHAUST_VELOCITY
         self.thrust_curve = np.linspace(2500, 2500, num=int(self.burn_duration/dt_thrust_curve)) #Eventually this will be data in constants file
         self.thrust_history = np.empty(shape=(0)) # The thrust curve we will fill up for integration (Just keep it this way it's easier than trying to reshape the origional thrust curve every time)
         self.thrust = self.thrust_curve[0]

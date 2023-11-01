@@ -5,21 +5,21 @@ from PathPlanner.plan import PlannedTrajectory
 
 
 
-# State is of form x y z xdot ydot zdot totalmass throttle
+# State is of form x y z xdot ydot zdot. Start slightly off the ground so simulation doesn't terminate
 state_0 = np.array([0, 0, 0, 0, 0, 0])
 tf = 10
 ts = 0.1
 
-planned_trajectory = PlannedTrajectory(tf/5, 50, 4*tf/5, tf/3, [25, 25, 0], ts).trajectory
+planned_trajectory = PlannedTrajectory(2*tf/5, 50, 3*tf/5, tf/5, [25, 25, 0], ts).trajectory
 sim = Simulation(tf, ts, state_0, planned_trajectory)
 
 trajectory = sim.propogate()
-
 mass = sim.rocket.massHistory
 throttle = sim.rocket.engine.throttle_history
-print(throttle)
-#Graphing.plotter.animate_3DOF_trajectory(trajectory, planned_trajectory)
-Graphing.plotter.plot_error(errorHistory=sim.errorHistory)
-#Graphing.plotter.plot_mass(mass, ts, tf)
+
+Graphing.plotter.animate_3DOF_trajectory(trajectory, planned_trajectory)
+Graphing.plotter.plot_variable_vs_time(sim.errorHistory[:,2], ts, tf, name="Z Error (m)")
+Graphing.plotter.plot_variable_vs_time(mass, ts, tf, name="Mass (kg)")
+Graphing.plotter.plot_variable_vs_time(throttle, ts, tf, name="Throttle")
 
 

@@ -23,6 +23,6 @@ class Rocket:
             mass = mass of rocket at current query time
             
         """
-        self.engine.mass -= (self.engine.thrust / self.engine.thrust_mass_constant) * dt
+        self.engine.mass -= (self.engine.thrust *  self.engine.throttle / self.engine.exhaust_velocity) * dt
         self.mass = self.mass_noEngine + self.engine.mass
         self.massHistory = np.append(self.massHistory, self.mass)

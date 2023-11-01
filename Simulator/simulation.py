@@ -2,7 +2,7 @@ import numpy as np
 import scipy.integrate
 import Vehicle.engine
 import Vehicle.rocket
-from Control.throttle import PIDController
+from Control.controller import PIDController
 import Control.controlConstants
 
 
@@ -22,7 +22,7 @@ class Simulation:
         self.errorHistory = np.empty((0)) 
 
         #PID controller 
-        self.pid_controller = PIDController(kp=Control.controlConstants.KP_CONSTANT, ki=Control.controlConstants.KI_CONSTANT, kd=Control.controlConstants.KD_CONSTANT)
+        self.throttle_controller = PIDController(kp=Control.controlConstants.KP_CONSTANT_THROTTLE, ki=Control.controlConstants.KI_CONSTANT_THROTTLE, kd=Control.controlConstants.KD_CONSTANT_THROTTLE)
         
     def propogate(self):
         """ Simple propogator
@@ -46,8 +46,15 @@ class Simulation:
         t_span = np.linspace(0, int(tf/ts)*ts, num=int(tf/ts)+1)
         t = (0,self.timefinal)
 
-        # Propogate given ODE
-        solution = scipy.integrate.solve_ivp(self.wrapper_state_to_stateDot, t, state, args=(self.rocket, self.ideal_trajectory, t_span), t_eval=t_span, max_step=ts/5)
+        # Propogate given ODE, stop when rocket crashes as indicated by this here event function
+        def event(t,y,r,it,tt):
+            if t < 2 * ts:
+                return 1
+            else:
+                return 1#y[2]
+        event.terminal=True
+        event.direction=-1
+        solution = scipy.integrate.solve_ivp(self.wrapper_state_to_stateDot, t, state, args=(self.rocket, self.ideal_trajectory, t_span), t_eval=t_span, max_step=ts/5, events=event)
         return solution['y'].T
 
     def wrapper_state_to_stateDot(self, t, state, rocket, ideal_trajectory, t_vec):
@@ -59,9 +66,10 @@ class Simulation:
         # Check if we are on an actual simulation timestep or if this is ode solving shenanigans
         if (t == 0) or (t >= t_vec[currStep] and previous_time < t_vec[currStep]):
 
-            # FIND ACTUATOR ADJUSTMENTS
+            # Calculate Error
             ideal_state = ideal_trajectory[currStep]
             error = state[0:3] - ideal_state
+            dt = t_vec[1] - t_vec[0]
 
             # Save error to error history
             if t == 0:
@@ -69,12 +77,10 @@ class Simulation:
             else:
                 self.errorHistory = np.append(self.errorHistory, error.reshape((1, 3)), axis=0)
             
+            #Find Actuator Values
+            throttle = self.throttle_controller.control(error, dt)
             theta_x = 0.0
             theta_y = 0.0
-            dt = t_vec[1] - t_vec[0]
-            
-            #new PID Throttle
-            throttle = self.pid_controller.getThrottle(rocket.engine.throttle, error, dt)
             
             # Log Current States
             rocket.engine.save_throttle(throttle)

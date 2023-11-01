@@ -60,6 +60,27 @@ def animate_3DOF_trajectory(trajectory, planned_trajectory):
     # Show Animation
     plt.show()
 
+def dynamics(trajectory, ts, tf):
+    frame=len(trajectory)
+    x_pos = trajectory[:frame, 0]
+    y_pos = trajectory[:frame, 1]
+    z_pos = trajectory[:frame, 2]
+
+    x_vel = trajectory[:frame, 3]
+    y_vel = trajectory[:frame, 4]
+    z_vel = trajectory[:frame, 5]
+
+    t = np.linspace(0, tf, int(tf/ts)+1)
+
+    x_acc = np.diff(x_vel) / np.diff(t[0:len(x_vel)])
+    y_acc = np.diff(y_vel) / np.diff(t[0:len(y_vel)])
+    z_acc = np.diff(z_vel) / np.diff(t[0:len(z_vel)])
+
+
+    return [x_pos, y_pos, z_pos, x_vel, y_vel, z_vel, x_acc, y_acc, z_acc]
+
+
+
 def plot_variable_vs_time(var, ts, tf, name='INSERT NAME HERE'):
 
     fig, ax = plt.subplots()
@@ -73,3 +94,4 @@ def plot_variable_vs_time(var, ts, tf, name='INSERT NAME HERE'):
     ax.set_ylabel(name)
 
     plt.show()
+

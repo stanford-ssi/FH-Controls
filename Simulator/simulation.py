@@ -17,7 +17,8 @@ class Simulation:
         self.rocket = Vehicle.rocket.Rocket(simulation_timestep)
         self.timestep = simulation_timestep
         self.timefinal = timefinal
-        self.t_prev = 0
+        self.previous_time = 0
+        self.current_step = 0
         self.ideal_trajectory = planned_trajectory
         self.errorHistory = np.empty((0)) 
 
@@ -51,23 +52,34 @@ class Simulation:
             if t < 2 * ts:
                 return 1
             else:
-                return 1#y[2]
+                return y[2]
         event.terminal=True
         event.direction=-1
         solution = scipy.integrate.solve_ivp(self.wrapper_state_to_stateDot, t, state, args=(self.rocket, self.ideal_trajectory, t_span), t_eval=t_span, max_step=ts/5, events=event)
         return solution['y'].T
 
+    def display_end_info(self):
+        print()
+        print("Simulation Ended at t = ", self.previous_time, "s, at simulation step ", self.current_step)
+        print()
+        if self.previous_time == self.timefinal:
+            print("Sucsessful Execution of Planned Trajectory")
+        else:
+            print("Unsucsessful Execution of Planned Trajectory")
+            print("VEHICLE CRASH DETECTED")
+        print()
+        print("Rocket Start Mass: ", self.rocket.massHistory[0], "kg | End Mass: ", self.rocket.mass)
+        print("Engine Start Mass: ", self.rocket.engine.full_mass, "kg | End Mass: ", self.rocket.engine.mass)
+        print("Percent Fuel Remaining: ", 1 - (self.rocket.engine.full_mass - self.rocket.engine.mass) / (self.rocket.engine.full_mass - self.rocket.engine.drymass))
+        print()
+        
     def wrapper_state_to_stateDot(self, t, state, rocket, ideal_trajectory, t_vec):
-        global previous_time
-        global currStep
-        if t == 0:
-            currStep = 0
 
         # Check if we are on an actual simulation timestep or if this is ode solving shenanigans
-        if (t == 0) or (t >= t_vec[currStep] and previous_time < t_vec[currStep]):
+        if (t == 0) or (t >= t_vec[self.current_step] and self.previous_time < t_vec[self.current_step]):
 
             # Calculate Error
-            ideal_state = ideal_trajectory[currStep]
+            ideal_state = ideal_trajectory[self.current_step]
             error = state[0:3] - ideal_state
             dt = t_vec[1] - t_vec[0]
 
@@ -90,9 +102,9 @@ class Simulation:
             rocket.update_mass(dt)
 
             if not t == t_vec[-1]:
-                currStep += 1
+                self.current_step += 1
 
-        previous_time = t
+        self.previous_time = t
         return self.state_to_stateDot(t, state, rocket)
 
     def state_to_stateDot(self, t, state, rocket):

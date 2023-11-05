@@ -1,5 +1,6 @@
 import numpy as np
-import scipy
+from scipy.optimize import linprog
+import matplotlib.pyplot as plt
 
 class PlannedTrajectory:
     def __init__(self, ascent_time, max_altitude, hover_time, descent_time, target, dt):
@@ -11,6 +12,7 @@ class PlannedTrajectory:
         self.dt = dt
         self.t_total = ascent_time + hover_time + descent_time
         self.trajectory = self.plan_path()
+
 
     def plan_path(self):
         """ Plan trajectory. For now, trajectory starts straight up, hoovers, and then decends towards target"""

@@ -15,9 +15,9 @@ def animate_3DOF_trajectory(trajectory, planned_trajectory):
     
     # Data Bounds
     # NOTE: adjust bounds for plot accordingly
-    ax.set_xlim(np.min(planned_trajectory[:,0]), np.max(planned_trajectory[:,0]))
-    ax.set_ylim(np.min(planned_trajectory[:,1]), np.max(planned_trajectory[:,1]))
-    ax.set_zlim(np.min(planned_trajectory[:,2]), np.max(planned_trajectory[:,2]))
+    ax.set_xlim(np.min(planned_trajectory[:,0]) - 1, np.max(planned_trajectory[:,0]) + 1)
+    ax.set_ylim(np.min(planned_trajectory[:,1]) - 1, np.max(planned_trajectory[:,1]) + 1)
+    ax.set_zlim(np.min(planned_trajectory[:,2]) - 1, np.max(planned_trajectory[:,2]) + 1)
 
     # Set labels for the axes
     ax.set_xlabel('X-axis')

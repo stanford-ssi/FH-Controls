@@ -1,16 +1,32 @@
 import numpy as np
-import scipy
+from scipy.optimize import linprog
+import matplotlib.pyplot as plt
+import Graphing.plotter
 
 class PlannedTrajectory:
-    def __init__(self, ascent_time, max_altitude, hover_time, descent_time, target, dt):
-        self.ascent_time = ascent_time
+    def __init__(self, max_altitude, time, target, dt):
         self.max_altitude = max_altitude
-        self.hover_time = hover_time
-        self.descent_time = descent_time
         self.target = target
         self.dt = dt
-        self.t_total = ascent_time + hover_time + descent_time
-        self.trajectory = self.plan_path()
+        self.t_total = time
+        self.trajectory = self.cubic_trajectory()
+
+    def cubic_trajectory(self):
+        # Define time intervals
+        time_intervals = np.linspace(0, int(self.t_total/self.dt)*self.dt, num=int(self.t_total/self.dt)+1)
+
+        # Determine the acceleration period (first half of time)
+        acceleration_time = self.t_total / 2
+        acceleration = 1.5 * self.max_altitude / acceleration_time ** 3
+
+        # Calculate the trajectory based on the cubic function
+        trajectory = [
+            [0,0,(8 * acceleration) * (t)] if t <= acceleration_time else
+            [0,0,(self.max_altitude - (acceleration / 3) * (self.t_total - t) ** 3)] for t in time_intervals
+        ]
+        Graphing.plotter.plot_variable_vs_time(np.array(trajectory)[:,2], self.dt, self.t_total, name="Planned Trajectory")
+        return np.array(trajectory)
+
 
     def plan_path(self):
         """ Plan trajectory. For now, trajectory starts straight up, hoovers, and then decends towards target"""

@@ -22,13 +22,9 @@ dynamics = Graphing.plotter.dynamics(trajectory, ts, tf)
 dynamics_plot_names = ["X Position", "Y Position", "Z Position", "X Velocity", "Y Velocity", "Z Velocity", "X Acceleration", "Y Acceleration", "Z Acceleration"]
 
 # Graphs
-
 Graphing.plotter.animate_3DOF_trajectory(trajectory, planned_trajectory)
 Graphing.plotter.plot_error_mass_throttle(error_mass_throttle, ts, tf)
 Graphing.plotter.plot_dynamics(dynamics, ts, tf, names=dynamics_plot_names)
-Graphing.plotter.plot_variable_vs_time(sim.errorHistory[:,0], ts, tf, name="X Error (m)")
-Graphing.plotter.plot_variable_vs_time(sim.errorHistory[:,1], ts, tf, name="Y Error (m)")
-Graphing.plotter.plot_variable_vs_time(sim.errorHistory[:,2], ts, tf, name="Z Error (m)")
 
 
 

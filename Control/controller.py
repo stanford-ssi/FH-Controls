@@ -15,16 +15,15 @@ class PIDController:
     #self-note for concern: if there are any errors with this code, it's like with the z_error and error portions, since z_error = error[2] and I'm unsure if this is all correct. 
     
     def control(self, error, dt, type):
-        z_error = -1 * error[2]  # Extract the third element from the error array
         # P term
-        p_term = self.kp * z_error
+        p_term = self.kp * error
         
         # I term
-        self.integral += z_error * dt
+        self.integral += error * dt
         i_term = self.ki * self.integral
         
         # D term
-        derivative = (z_error - self.prev_error) / dt
+        derivative = (error - self.prev_error) / dt
         d_term = self.kd * derivative
 
         # Update throttle and previous error
@@ -32,7 +31,7 @@ class PIDController:
         if type == 'throttle':
             new = self.throttle_checks(new)
 
-        self.prev_error = z_error
+        self.prev_error = error
         return new
 
     def throttle_checks(self, throttle):

@@ -12,7 +12,6 @@ ts = 0.1
 planned_trajectory = PlannedTrajectory(50, tf, [0, 0, 0], ts).trajectory
 sim = Simulation(tf, ts, state_0, planned_trajectory)
 # Run Simulation
-breakpoint()
 trajectory = sim.propogate()
 sim.display_end_info()
 # Pull Info for Graphs
@@ -23,10 +22,8 @@ dynamics = Graphing.plotter.dynamics(trajectory, ts, tf)
 # Graphs
 
 Graphing.plotter.animate_3DOF_trajectory(trajectory, planned_trajectory)
-
 Graphing.plotter.plot_variable_vs_time(sim.errorHistory[:,0], ts, tf, name="X Error (m)")
 Graphing.plotter.plot_variable_vs_time(sim.errorHistory[:,1], ts, tf, name="Y Error (m)")
-
 Graphing.plotter.plot_variable_vs_time(sim.errorHistory[:,2], ts, tf, name="Z Error (m)")
 Graphing.plotter.plot_variable_vs_time(mass, ts, tf, name="Mass (kg)")
 Graphing.plotter.plot_variable_vs_time(throttle, ts, tf, name="Throttle")

@@ -24,6 +24,8 @@ class Simulation:
 
         #PID controller 
         self.throttle_controller = PIDController(kp=Control.controlConstants.KP_CONSTANT_THROTTLE, ki=Control.controlConstants.KI_CONSTANT_THROTTLE, kd=Control.controlConstants.KD_CONSTANT_THROTTLE)
+        self.theta_x_controller = PIDController(kp=Control.controlConstants.KP_CONSTANT_THETA, ki=Control.controlConstants.KI_CONSTANT_THETA, kd=Control.controlConstants.KI_CONSTANT_THETA)
+        self.theta_y_controller = PIDController(kp=Control.controlConstants.KP_CONSTANT_THETA, ki=Control.controlConstants.KI_CONSTANT_THETA, kd=Control.controlConstants.KI_CONSTANT_THETA)
         
     def propogate(self):
         """ Simple propogator
@@ -90,9 +92,9 @@ class Simulation:
                 self.errorHistory = np.append(self.errorHistory, error.reshape((1, 3)), axis=0)
             
             #Find Actuator Values
-            throttle = self.throttle_controller.control(error, dt, 'throttle')
-            theta_x = 0.0
-            theta_y = 0.0
+            throttle = self.throttle_controller.control(-1 * error[2], dt, 'throttle')
+            theta_x = self.theta_x_controller.control(error[0], dt, 'thetax')
+            theta_y = self.theta_x_controller.control(error[1], dt, 'thetay')
             
             # Log Current States
             rocket.engine.save_throttle(throttle)

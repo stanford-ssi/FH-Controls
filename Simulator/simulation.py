@@ -49,7 +49,7 @@ class Simulation:
 
         # Propogate given ODE, stop when rocket crashes as indicated by this here event function
         def event(t,y,r,it,tt):
-            if t < 2 * ts:
+            if t < 5 * ts:
                 return 1
             else:
                 return y[2]
@@ -72,7 +72,7 @@ class Simulation:
         print("Engine Start Mass: ", self.rocket.engine.full_mass, "kg | End Mass: ", self.rocket.engine.mass)
         print("Percent Fuel Remaining: ", 1 - (self.rocket.engine.full_mass - self.rocket.engine.mass) / (self.rocket.engine.full_mass - self.rocket.engine.drymass))
         print()
-        
+
     def wrapper_state_to_stateDot(self, t, state, rocket, ideal_trajectory, t_vec):
 
         # Check if we are on an actual simulation timestep or if this is ode solving shenanigans
@@ -90,7 +90,7 @@ class Simulation:
                 self.errorHistory = np.append(self.errorHistory, error.reshape((1, 3)), axis=0)
             
             #Find Actuator Values
-            throttle = self.throttle_controller.control(error, dt)
+            throttle = self.throttle_controller.control(error, dt, 'throttle')
             theta_x = 0.0
             theta_y = 0.0
             

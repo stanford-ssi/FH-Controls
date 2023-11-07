@@ -1,18 +1,18 @@
 import numpy as np
 from Simulator.simulation import Simulation
 import Graphing.plotter
-from PathPlanner.plan import PlannedTrajectory
+from PathPlanner.plan import PlannedTrajectory 
+from PathPlanner.pathPlannerConstants import *
 
 # Simulation Variables
 state_0 = np.array([0, 0, 0, 0, 0, 0]) # Start State
 tf = 10
 ts = 0.1
 
-
-planned_trajectory = PlannedTrajectory(N, dt, x0, h_target, v_target, h_max, h_min, v_max, v_min, a_max, a_min, max_a_rate_up, max_a_rate_down).solve_optimization_problem()
-
 # Setup Simulation
-planned_trajectory = PlannedTrajectory(50, tf, [0, 0, 0], ts).trajectory
+
+#variables used for planned trajectory come from pathPlannerConstants (this could cause issues, and is something I want to rework)
+planned_trajectory = PlannedTrajectory(N, dt, x0, h_target, v_target, h_max, h_min, v_max, v_min, a_max, a_min, max_a_rate_up, max_a_rate_down).solve_optimization_problem()
 sim = Simulation(tf, ts, state_0, planned_trajectory)
 # Run Simulation
 trajectory = sim.propogate()

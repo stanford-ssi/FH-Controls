@@ -2,7 +2,7 @@ import numpy as np
 from Simulator.simulation import Simulation
 import Graphing.plotter
 from PathPlanner.plan import PlannedTrajectory 
-from PathPlanner.pathPlannerConstants import *
+import PathPlanner.pathPlannerConstants 
 
 # Simulation Variables
 state_0 = np.array([0, 0, 0, 0, 0, 0]) # Start State

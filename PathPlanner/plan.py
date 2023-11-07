@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.optimize import linprog
 import matplotlib.pyplot as plt
-from pathPlannerConstants import * 
+import PathPlanner.pathPlannerConstants
 
 class PlannedTrajectory:
     def __init__(self, N, dt, x0, h_target, v_target, h_max, h_min, v_max, v_min, a_max, a_min, max_a_rate_up, max_a_rate_down):

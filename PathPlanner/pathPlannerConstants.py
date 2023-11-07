@@ -18,6 +18,5 @@ h_target = 50  # m, target height
 v_target = 0  # m/s, target velocity
 x0 = np.array([0, 0, 0])  # [m, m, m], initial state vector
 
-# Model matrices
-Phi = np.array([[1, dt], [0, 1]])
-Gamma = np.array([0, dt])
+#model matrices were removed from here. 
+#TO-DO: Discussion on whether to re-add?

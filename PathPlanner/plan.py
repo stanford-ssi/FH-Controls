@@ -1,68 +1,108 @@
 import numpy as np
 from scipy.optimize import linprog
 import matplotlib.pyplot as plt
-import Graphing.plotter
+from pathPlannerConstants import * 
 
-class PlannedTrajectory:
-    def __init__(self, max_altitude, time, target, dt):
-        self.max_altitude = max_altitude
-        self.target = target
+class PathPlanner:
+    def __init__(self, N, dt, x0, h_target, v_target, h_max, h_min, v_max, v_min, a_max, a_min, max_a_rate_up, max_a_rate_down):
+        # Initialize all required variables
+        self.N = N
         self.dt = dt
-        self.t_total = time
-        self.trajectory = self.cubic_trajectory()
+        self.x0 = x0
+        self.h_target = h_target
+        self.v_target = v_target
+        self.h_max = h_max
+        self.h_min = h_min
+        self.v_max = v_max
+        self.v_min = v_min
+        self.a_max = a_max
+        self.a_min = a_min
+        self.max_a_rate_up = max_a_rate_up
+        self.max_a_rate_down = max_a_rate_down
+        self.f = np.zeros(3 * N)
+        self.A = np.zeros((6 * N, 3 * N))
+        self.B = np.zeros(6 * N)
+        self.A_eq = np.zeros((2 * N + 4, 3 * N))
+        self.B_eq = np.zeros(2 * N + 4)
+        self.result = None
+        self.setup_problem()
 
-    def cubic_trajectory(self):
-        # Define time intervals
-        time_intervals = np.linspace(0, int(self.t_total/self.dt)*self.dt, num=int(self.t_total/self.dt)+1)
+    def setup_problem(self):
+        # Setup cost function, inequality and equality constraints
+        self.construct_cost_function()
+        self.setup_inequality_constraints()
+        self.setup_equality_constraints()
 
-        # Determine the acceleration period (first half of time)
-        acceleration_time = self.t_total / 2
-        acceleration = 1.5 * self.max_altitude / acceleration_time ** 3
+    def construct_cost_function(self):
+        # Construct the cost function vector f
+        self.f[2::3] = 1  # Only considering the acceleration components for cost
 
-        # Calculate the trajectory based on the cubic function
-        trajectory = [
-            [0,0,(8 * acceleration) * (t)] if t <= acceleration_time else
-            [0,0,(self.max_altitude - (acceleration / 3) * (self.t_total - t) ** 3)] for t in time_intervals
-        ]
-        Graphing.plotter.plot_variable_vs_time(np.array(trajectory)[:,2], self.dt, self.t_total, name="Planned Trajectory")
-        return np.array(trajectory)
+    def setup_inequality_constraints(self):
+        # Initialize and set up inequality constraints A and B
+        for i in range(self.N):
+            idx = 3 * i
+            self.A[idx:idx+3, idx:idx+3] = np.eye(3)
+            self.B[idx:idx+3] = [self.h_max, self.v_max, self.a_max]
+            self.A[idx+3*self.N:idx+3+3*self.N, idx:idx+3] = -np.eye(3)
+            self.B[idx+3*self.N:idx+3+3*self.N] = [-self.h_min, -self.v_min, -self.a_min]
 
+        # Add rate of change constraints
+        for i in range(1, self.N):
+            idx = 2 * (i - 1) + 6 * self.N
+            self.A[idx, 3 * i] = 1
+            self.A[idx, 3 * (i + 1)] = -1
+            self.B[idx] = -self.max_a_rate_down
+            self.A[idx + 1, 3 * i] = -1
+            self.A[idx + 1, 3 * (i + 1)] = 1
+            self.B[idx + 1] = self.max_a_rate_up
 
-    def plan_path(self):
-        """ Plan trajectory. For now, trajectory starts straight up, hoovers, and then decends towards target"""
+    def setup_equality_constraints(self):
+        # Initialize and set up equality constraints A_eq and B_eq
+        physics_mat = np.zeros((3, 3))
+        physics_mat[:2, :2] = Phi
+        physics_mat[:2, 2] = Gamma
 
-        # Define Time
-        t = np.linspace(0, int(self.t_total/self.dt)*self.dt, num=int(self.t_total/self.dt))
+        for i in range(self.N - 1):
+            idx = 2 * i
+            self.A_eq[idx:idx+2, 3*i:3*i+3] = -physics_mat[:2, :3]
+            self.A_eq[idx:idx+2, 3*(i+1):3*(i+1)+2] = np.eye(2)
 
-        # Write Vertical Portion
-        vertical_states = self.vertical_portion()
-        hoover_states = self.hoover_portion()
-        #descent_states = self.descent_portion()
-        return(np.concatenate((vertical_states, hoover_states), axis=0))
+        self.A_eq[2 * self.N - 1:2 * self.N + 1, :3] = np.eye(3)
+        self.B_eq[2 * self.N - 1:2 * self.N + 1] = self.x0
 
-    def vertical_portion(self):
-        # For now, simple linear ascent profile
-        final_time = int(self.ascent_time/self.dt)*self.dt
-        t = np.linspace(0, final_time, num=int(self.ascent_time/self.dt) + 1)
-        x = np.zeros(len(t))
-        y = np.zeros(len(t))
-        z = (self.max_altitude / final_time) * t
-        return(np.column_stack((x, y, z)))
+        self.A_eq[2 * self.N + 2, 3*self.N-3] = 1
+        self.A_eq[2 * self.N + 3, 3*self.N-2] = 1
+        self.B_eq[2 * self.N + 2] = self.h_target
+        self.B_eq[2 * self.N + 3] = self.v_target
 
-    def hoover_portion(self):
-        # For now, simple linear ascent profile
-        final_time = int(self.hover_time/self.dt)*self.dt
-        t = np.linspace(0, final_time, num=int(self.hover_time/self.dt))
-        x = np.zeros(len(t))#(self.target[0] / final_time) * t
-        y = np.zeros(len(t))#(self.target[1] / final_time) * t
-        z = np.full(len(t), self.max_altitude)
-        return(np.column_stack((x, y, z)))
+    def solve_optimization_problem(self):
+        # Solve the optimization problem using linprog
+        # Since scipy.optimize.linprog minimizes, we negate f to maximize
+        self.result = linprog(-self.f, A_ub=self.A, b_ub=self.B, A_eq=self.A_eq, b_eq=self.B_eq, method='highs')
 
-    def descent_portion(self):
-        # For now, simple linear ascent profile
-        final_time = int(self.descent_time/self.dt)*self.dt
-        t = np.linspace(0, final_time, num=int(self.descent_time/self.dt))
-        x = np.zeros(len(t))#np.full(len(t), self.target[0])
-        y = np.zeros(len(t))#np.full(len(t), self.target[1])
-        z = (-1 * self.max_altitude / final_time) * t + self.max_altitude
-        return(np.column_stack((x, y, z)))
+    def plot_results(self):
+        # Extract the solution and plot the results
+        x = self.result.x
+
+        time = np.linspace(0, self.N*self.dt, self.N)
+        plt.figure(1)
+        plt.plot(time, x[::3])
+        plt.xlabel('Time (s)')
+        plt.ylabel('Height (m)')
+
+        plt.figure(2)
+        plt.plot(time, x[1::3])
+        plt.xlabel('Time (s)')
+        plt.ylabel('Vertical Speed (m/s)')
+
+        plt.figure(3)
+        plt.plot(time, x[2::3])
+        plt.xlabel('Time (s)')
+        plt.ylabel('Acceleration (m/s^2)')
+
+        plt.show()
+
+# Assuming pathPlannerConstants.py provides the constants like N, dt, x0, h_max, etc.
+planner = PathPlanner(N, dt, x0, h_target, v_target, h_max, h_min, v_max, v_min, a_max, a_min, max_a_rate_up, max_a_rate_down)
+planner.solve_optimization_problem()
+planner.plot_results()

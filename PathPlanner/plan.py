@@ -80,6 +80,8 @@ class PlannedTrajectory:
         # Since scipy.optimize.linprog minimizes, we negate f to maximize
         self.result = linprog(-self.f, A_ub=self.A, b_ub=self.B, A_eq=self.A_eq, b_eq=self.B_eq, method='highs')
 
+    #This was just from vignesh's original matlab code but this doesn't get used at the moment. 
+    #TO-DO: Talk with Jerry AND Vignesh about how to integrate this into our existing plots and what is relevant vs not-relevant.
     def plot_results(self):
         # Extract the solution and plot the results
         x = self.result.x
@@ -101,8 +103,3 @@ class PlannedTrajectory:
         plt.ylabel('Acceleration (m/s^2)')
 
         plt.show()
-
-# Assuming pathPlannerConstants.py provides the constants like N, dt, x0, h_max, etc.
-planner = PathPlanner(N, dt, x0, h_target, v_target, h_max, h_min, v_max, v_min, a_max, a_min, max_a_rate_up, max_a_rate_down)
-planner.solve_optimization_problem()
-planner.plot_results()

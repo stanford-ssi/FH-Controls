@@ -9,10 +9,7 @@ tf = 10
 ts = 0.1
 
 
-planned_trajectory = PathPlanner(N, dt, x0, h_target, v_target, h_max, h_min, v_max, v_min, a_max, a_min, max_a_rate_up, max_a_rate_down)
-planned_trajectory.solve_optimization_problem()
-planner.plot_results()
-
+planned_trajectory = PlannedTrajectory(N, dt, x0, h_target, v_target, h_max, h_min, v_max, v_min, a_max, a_min, max_a_rate_up, max_a_rate_down).solve_optimization_problem()
 
 # Setup Simulation
 planned_trajectory = PlannedTrajectory(50, tf, [0, 0, 0], ts).trajectory

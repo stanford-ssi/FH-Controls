@@ -67,11 +67,17 @@ def dynamics(trajectory, ts, tf):
     x_pos = trajectory[:frame, 0]
     y_pos = trajectory[:frame, 1]
     z_pos = trajectory[:frame, 2]
+    theta_x = trajectory[:frame, 6]
+    theta_y = trajectory[:frame, 7]
+    theta_z = trajectory[:frame, 8]
 
     # reads x, y, z velocity
     x_vel = trajectory[:frame, 3]
     y_vel = trajectory[:frame, 4]
     z_vel = trajectory[:frame, 5]
+    omega_x = trajectory[:frame, 9]
+    omega_y = trajectory[:frame, 10]
+    omega_z = trajectory[:frame, 11]
 
     t = np.linspace(0, tf, int(tf/ts)+1)
 
@@ -79,8 +85,11 @@ def dynamics(trajectory, ts, tf):
     x_acc = np.diff(x_vel) / np.diff(t[0:len(x_vel)])
     y_acc = np.diff(y_vel) / np.diff(t[0:len(y_vel)])
     z_acc = np.diff(z_vel) / np.diff(t[0:len(z_vel)])
+    x_alpha = np.diff(omega_x) / np.diff(t[0:len(omega_x)])
+    y_alpha = np.diff(omega_y) / np.diff(t[0:len(omega_y)])
+    z_alpha = np.diff(omega_z) / np.diff(t[0:len(omega_z)])
 
-    return [x_pos, y_pos, z_pos, x_vel, y_vel, z_vel, x_acc, y_acc, z_acc]
+    return [x_pos, y_pos, z_pos, x_vel, y_vel, z_vel, x_acc, y_acc, z_acc, theta_x, theta_y, theta_z, omega_x, omega_y, omega_z, x_alpha, y_alpha, z_alpha]
 
 
 def plot_error_mass_throttle(error_mass_throttle, ts, tf):
@@ -95,9 +104,8 @@ def plot_error_mass_throttle(error_mass_throttle, ts, tf):
 def plot_dynamics(dynamic_vars, ts, tf, names=None):
     if names is None:
         names = ["INSERT NAME HERE" for i in range(len(dynamic_vars))]
-
     nrows, ncols = 3, 3
-    fig = plt.figure(2)
+    fig = plt.figure()
     gs = gridspec.GridSpec(nrows, ncols, height_ratios=[1, 1, 1], width_ratios=[1, 1, 1])
     for i in range(len(dynamic_vars)):
         var_ax = plt.subplot(gs[i])

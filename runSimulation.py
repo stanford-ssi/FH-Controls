@@ -4,7 +4,8 @@ import Graphing.plotter
 from PathPlanner.plan import PlannedTrajectory
 
 # Simulation Variables
-state_0 = np.array([0, 0, 0, 0, 0, 0]) # Start State
+# State is all relative to global frame except Z rotation which is rocket frame
+state_0 = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) # Start State [X, Y, Z, VX, VY, VZ, THX, THY, THZ, OMX, OMY, OMZ]
 tf = 10
 ts = 0.1
 
@@ -14,9 +15,8 @@ sim = Simulation(tf, ts, state_0, planned_trajectory)
 # Run Simulation
 trajectory = sim.propogate()
 sim.display_end_info()
+
 # Pull Info for Graphs
-# JERRY: we'll plot error, mass, and throttle on one window
-# Then, the dynamics information on a second window
 error_mass_throttle = [sim.errorHistory[:,2], sim.rocket.massHistory, sim.rocket.engine.throttle_history]
 dynamics = Graphing.plotter.dynamics(trajectory, ts, tf)
 dynamics_plot_names = ["X Position", "Y Position", "Z Position", "X Velocity", "Y Velocity", "Z Velocity", "X Acceleration", "Y Acceleration", "Z Acceleration"]

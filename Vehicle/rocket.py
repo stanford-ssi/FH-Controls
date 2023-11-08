@@ -13,6 +13,11 @@ class Rocket:
         self.mass = self.mass_noEngine + self.engine.full_mass #Rocket Starts Fully Fueled
         self.massHistory = np.empty(shape=(0))
         
+        self.lever_arm = 0.5
+        self.Ix = 1
+        self.Iy = 1
+        self.Iz = 1
+        
     def update_mass(self, dt):
         """ Outputs the expected mass based on it
         

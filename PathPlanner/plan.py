@@ -1,107 +1,99 @@
+#ok but hear me out...
+
 import numpy as np
 from scipy.optimize import linprog
 import matplotlib.pyplot as plt
-import PathPlanner.pathPlannerConstants
 
-class PlannedTrajectory:
-    def __init__(self, N, dt, x0, h_target, v_target, h_max, h_min, v_max, v_min, a_max, a_min, max_a_rate_up, max_a_rate_down):
-        # Initialize all required variables
-        self.N = N
-        self.dt = dt
-        self.x0 = x0
-        self.h_target = h_target
-        self.v_target = v_target
-        self.h_max = h_max
-        self.h_min = h_min
-        self.v_max = v_max
-        self.v_min = v_min
-        self.a_max = a_max
-        self.a_min = a_min
-        self.max_a_rate_up = max_a_rate_up
-        self.max_a_rate_down = max_a_rate_down
-        
-        # Pre-compute Phi and Gamma matrices
-        self.Phi = np.array([[1, dt, 0.5 * dt**2], [0, 1, dt], [0, 0, 1]])
-        self.Gamma = np.array([dt**2 / 2, dt, 1]).reshape((3,1))
+# Constants and physics
+g = 9.81  # m/s^2
+dt = 0.2
+N = 100
+max_a_rate_up = 0.1 * g * dt
+max_a_rate_down = -0.1 * g * dt
+h_max = 55  # m
+h_min = 0  # m
+v_max = 10  # m/s
+v_min = -10  # m/s
+a_max = g
+a_min = -g
+h_target = 50
+v_target = 0
+x0 = [0, 0, 0]
 
-        # Initialize linear programming vectors and matrices
-        self.f = np.zeros(3 * N)
-        self.A = np.zeros((6 * N, 3 * N))
-        self.B = np.zeros(6 * N)
-        self.A_eq = np.zeros((2 * N + 4, 3 * N))
-        self.B_eq = np.zeros(2 * N + 4)
-        self.result = None
-        
-        self.setup_problem()
+# Model
+f = np.zeros(3 * N)
+f[2::3] = 1
+Phi = np.array([[1, dt],
+                [0, 1]])
+Gamma = np.array([0, dt])
 
-    def setup_problem(self):
-        # Setup cost function, inequality and equality constraints
-        self.construct_cost_function()
-        self.setup_inequality_constraints()
-        self.setup_equality_constraints()
+# Optimizer setup
+A = np.zeros((6 * N, 3 * N))
+B = np.zeros(6 * N)
+for i in range(N):
+    A[3 * i, 3 * i] = 1
+    A[3 * i + 1, 3 * i + 1] = 1
+    A[3 * i + 2, 3 * i + 2] = 1
+    B[3 * i] = h_max
+    B[3 * i + 1] = v_max
+    B[3 * i + 2] = a_max
+    A[3 * N + 3 * i, 3 * i] = -1
+    A[3 * N + 3 * i + 1, 3 * i + 1] = -1
+    A[3 * N + 3 * i + 2, 3 * i + 2] = -1
+    B[3 * N + 3 * i] = -h_min
+    B[3 * N + 3 * i + 1] = -v_min
+    B[3 * N + 3 * i + 2] = -a_min
 
-    def construct_cost_function(self):
-        # Construct the cost function vector f
-        self.f[2::3] = 1  # Only considering the acceleration components for cost
+for i in range(N - 1):
+    A[6 * N + 2 * i, 3 * i + 2] = 1
+    A[6 * N + 2 * i, 3 * (i + 1) + 2] = -1
+    B[6 * N + 2 * i] = -max_a_rate_down
+    A[6 * N + 2 * i + 1, 3 * i + 2] = -1
+    A[6 * N + 2 * i + 1, 3 * (i + 1) + 2] = 1
+    B[6 * N + 2 * i + 1] = max_a_rate_up
 
-    def setup_inequality_constraints(self):
-        # Initialize and set up inequality constraints A and B
-        for i in range(self.N):
-            idx = 3 * i
-            self.A[idx:idx+3, idx:idx+3] = np.eye(3)
-            self.B[idx:idx+3] = [self.h_max, self.v_max, self.a_max]
-            self.A[idx+3*self.N:idx+3+3*self.N, idx:idx+3] = -np.eye(3)
-            self.B[idx+3*self.N:idx+3+3*self.N] = [-self.h_min, -self.v_min, -self.a_min]
+# Equality constraints
+A_eq = np.zeros((2 * N + 4, 3 * N))
+B_eq = np.zeros(2 * N + 4)
+physics_mat = np.zeros((3, 3))
+physics_mat[0:2, 0:2] = Phi
+physics_mat[0:2, 2] = Gamma
 
-        # Add rate of change constraints
-        for i in range(1, self.N):
-            idx = 2 * (i - 1) + 6 * self.N
-            self.A[idx, 3 * i] = 1
-            self.A[idx, 3 * (i - 1)] = -1
-            self.B[idx] = self.dt * self.max_a_rate_down
-            self.A[idx + 1, 3 * i] = -1
-            self.A[idx + 1, 3 * (i - 1)] = 1
-            self.B[idx + 1] = self.dt * self.max_a_rate_up
+for i in range(N - 1):
+    A_eq[2 * i:2 * i + 2, 3 * i:3 * i + 3] = -physics_mat[0:2, :]
+    A_eq[2 * i:2 * i + 2, 3 * (i + 1):3 * (i + 1) + 2] = np.eye(2)
 
-    def setup_equality_constraints(self):
-        # Initialize and set up equality constraints A_eq and B_eq
-        for i in range(self.N - 1):
-            idx = 2 * i
-            self.A_eq[idx:idx+2, 3*i:3*i+3] = -self.Phi[:2, :3]
-            self.A_eq[idx:idx+2, 3*(i+1):3*(i+1)+2] = np.eye(2)
+A_eq[2 * N - 3:2 * N - 1, 3 * N] = 0
+A_eq[2 * N - 1, 0] = 1
+A_eq[2 * N, 1] = 1
+A_eq[2 * N + 1, 2] = 1
+B_eq[2 * N - 1:2 * N + 1] = x0
+A_eq[2 * N + 2, 3 * N - 3] = 1
+A_eq[2 * N + 3, 3 * N - 2] = 1
+B_eq[2 * N + 2] = h_target
+B_eq[2 * N + 3] = v_target
 
-        self.A_eq[2 * self.N - 2:2 * self.N, :3] = np.eye(3)
-        self.B_eq[2 * self.N - 2:2 * self.N] = self.x0
+# Solving linear programming problem
+result = linprog(f, A_ub=A, b_ub=B, A_eq=A_eq, b_eq=B_eq, method='highs')
 
-        self.A_eq[2 * self.N + 2, 3*self.N-3] = 1
-        self.A_eq[2 * self.N + 3, 3*self.N-2] = 1
-        self.B_eq[2 * self.N + 2] = self.h_target
-        self.B_eq[2 * self.N + 3] = self.v_target
+x = result.x
 
-    def solve_optimization_problem(self):
-        # Solve the optimization problem using linprog
-        # Since scipy.optimize.linprog minimizes, we negate f to maximize
-        self.result = linprog(-self.f, A_ub=self.A, b_ub=self.B, A_eq=self.A_eq, b_eq=self.B_eq, method='highs')
+# Plotting
+t = dt * np.linspace(0, N - 1, N)
+plt.figure(1)
+plt.plot(t, x[0::3])
+plt.xlabel('Time (s)')
+plt.ylabel('Height (m)')
 
-    #not used at the moment 
-    def plot_results(self):
-        # Extract the solution and plot the results
-        x = self.result.x
+plt.figure(2)
+plt.plot(t, x[1::3])
+plt.xlabel('Time (s)')
+plt.ylabel('Vertical Speed (m/s)')
 
-        time = np.linspace(0, self.N*self.dt, self.N)
-        plt.figure(1)
-        plt.plot(time, x[::3])
-        plt.xlabel('Time (s)')
-        plt.ylabel('Height (m)')
+plt.figure(3)
+plt.plot(t, x[2::3])
+plt.xlabel('Time (s)')
+plt.ylabel('Acceleration (m/s^2)')
 
-        plt.figure(2)
-        plt.plot(time, x[1::3])
-        plt.xlabel('Time (s)')
-        plt.ylabel('Vertical Speed (m/s)')
+plt.show()
 
-        plt.figure(3)
-        plt.plot(time, x[2::3])
-        plt.xlabel('Time (s)')
-        plt.ylabel('Acceleration (m/s^2)')
-
-        plt.show()

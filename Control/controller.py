@@ -30,6 +30,8 @@ class PIDController:
         new = p_term + i_term + d_term
         if type == 'throttle':
             new = self.throttle_checks(new)
+        if type == 'thetax' or type == 'thetay':
+            new = self.theta_checks(new)
 
         self.prev_error = error
         return new
@@ -40,3 +42,12 @@ class PIDController:
         if throttle > 1:
             return 1.0
         return throttle
+    
+    def theta_checks(self, theta):
+        if theta < -0.261799: # 15 Degrees
+            return -0.261799
+        if theta > 0.261799:
+            return 0.261799
+        return theta
+    
+

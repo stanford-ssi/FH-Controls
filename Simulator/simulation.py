@@ -51,7 +51,7 @@ class Simulation:
 
         # Propogate given ODE, stop when rocket crashes as indicated by this here event function
         def event(t,y,r,it,tt):
-            if t < 5 * ts:
+            if t < 10 * ts:
                 return 1
             else:
                 return y[2]
@@ -90,10 +90,10 @@ class Simulation:
                 self.errorHistory = error.reshape((1, 3))
             else:
                 self.errorHistory = np.append(self.errorHistory, error.reshape((1, 3)), axis=0)
-            
+
             #Find Actuator Values
             throttle = self.throttle_controller.control(-1 * error[2], dt, 'throttle')
-            theta_x = self.theta_x_controller.control(error[0], dt, 'thetax')
+            theta_x = self.theta_x_controller.control(-1 * error[0], dt, 'thetax')
             theta_y = self.theta_x_controller.control(error[1], dt, 'thetay')
             
             # Log Current States
@@ -127,17 +127,19 @@ class Simulation:
         statedot[0:3] = state[3:6]
         statedot[6:9] = state[9:12]
 
-        # These are in rocket frame
-        inertial_theta_X = state[6]
-        inertial_theta_Y = state[7]
         Ix = self.rocket.Ix
         Iy = self.rocket.Iy
         Iz = self.rocket.Iz
 
-        # Calculate Accelerations
-        aX = T * np.sin(thetaX + inertial_theta_X) / m
-        aY = T * np.sin(thetaY + inertial_theta_Y) / m
-        aZ = (T * np.cos(thetaX) * np.cos(thetaY) / m) - g
+        # Rocket rotations
+        rocket_theta_x = state[6]
+        rocket_theta_y = state[7]
+        rocket_theta_z = state[8]
+
+        # Calculate Accelerations in rocket frame
+        aX = (T * np.cos(thetaY) * np.sin(thetaX) / m) + (g * np.sin(rocket_theta_x) * np.cos(rocket_theta_z))
+        aY = (T * np.sin(thetaY) * np.sin(thetaX) / m) + (g * np.sin(rocket_theta_y) * np.sin(rocket_theta_z))
+        aZ = (T * np.cos(thetaX) / m) - (g * np.cos(rocket_theta_x) * np.cos(rocket_theta_y))
         
         # Calculate Alphas
         alphax = T * np.sin(thetaX) * lever_arm / Ix

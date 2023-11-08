@@ -24,7 +24,7 @@ class PlannedTrajectory:
             [0,0,(8 * acceleration) * (t)] if t <= acceleration_time else
             [0,0,(self.max_altitude - (acceleration / 3) * (self.t_total - t) ** 3)] for t in time_intervals
         ]
-        Graphing.plotter.plot_variable_vs_time(np.array(trajectory)[:,2], self.dt, self.t_total, name="Planned Trajectory")
+        #Graphing.plotter.plot_variable_vs_time(np.array(trajectory)[:,2], self.dt, self.t_total, name="Planned Trajectory")
         return np.array(trajectory)
 
 

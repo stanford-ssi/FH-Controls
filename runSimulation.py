@@ -24,7 +24,7 @@ dynamics_plot_names = ["X Position", "Y Position", "Z Position", "X Velocity", "
 rotational_dynamics_plot_names = ["THX", "THY", "THZ", "OMX", "OMY", "OMZ", "ALPHAX", "ALPHAY", "ALPHAZ"]
 
 # Graphs
-Graphing.plotter.animate_3DOF_trajectory(trajectory, planned_trajectory)
+#Graphing.plotter.animate_3DOF_trajectory(trajectory, planned_trajectory)
 Graphing.plotter.plot_error_mass_throttle(error_mass_throttle, ts, tf)
 Graphing.plotter.plot_dynamics(dynamics[0:9], ts, tf, names=dynamics_plot_names)
 Graphing.plotter.plot_dynamics(dynamics[9:18], ts, tf, names=rotational_dynamics_plot_names)

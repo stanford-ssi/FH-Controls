@@ -115,14 +115,38 @@ class Simulation:
         throttle = rocket.engine.throttle
         T = rocket.engine.get_thrust(t, throttle)
         m = rocket.mass
+        lever_arm = rocket.lever_arm
         thetaX = rocket.engine.thetax
         thetaY = rocket.engine.thetay
 
         # Build Statedot
-        statedot = np.zeros(6)
-        statedot[0:3] = state[3:6]
+        statedot = np.zeros(len(state))
 
-        # Calculate Acceleration
-        statedot[3:6] = [T * np.sin(thetaX), T * np.sin(thetaY), (T * np.cos(thetaX) / m) - g]
+        # ROTATE GLOBAL STATE INTO ROCKETFRAME
+
+        statedot[0:3] = state[3:6]
+        statedot[6:9] = state[9:12]
+
+        # These are in rocket frame
+        inertial_theta_X = state[6]
+        inertial_theta_Y = state[7]
+        Ix = self.rocket.Ix
+        Iy = self.rocket.Iy
+        Iz = self.rocket.Iz
+
+        # Calculate Accelerations
+        aX = T * np.sin(thetaX + inertial_theta_X) / m
+        aY = T * np.sin(thetaY + inertial_theta_Y) / m
+        aZ = (T * np.cos(thetaX) * np.cos(thetaY) / m) - g
+        
+        # Calculate Alphas
+        alphax = T * np.sin(thetaX) * lever_arm / Ix
+        alphay = T * np.sin(thetaY) * lever_arm / Iy
+        alphaz = 0 / Iz #Assuming for now there is no rocket rotation
+
+        statedot[3:6] = [aX, aY, aZ]
+        statedot[9:12] = [alphax, alphay, alphaz]
+
+        # ROTATE ROCKETFRAME STATEDOT INTO GLOBAL FRAME
         return statedot
     

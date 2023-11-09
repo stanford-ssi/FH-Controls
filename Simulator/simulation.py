@@ -3,6 +3,7 @@ import scipy.integrate
 import Vehicle.engine
 import Vehicle.rocket
 from Control.controller import PIDController
+import Simulator.math
 import Control.controlConstants
 
 
@@ -24,8 +25,8 @@ class Simulation:
 
         #PID controller 
         self.throttle_controller = PIDController(kp=Control.controlConstants.KP_CONSTANT_THROTTLE, ki=Control.controlConstants.KI_CONSTANT_THROTTLE, kd=Control.controlConstants.KD_CONSTANT_THROTTLE)
-        self.theta_x_controller = PIDController(kp=Control.controlConstants.KP_CONSTANT_THETA, ki=Control.controlConstants.KI_CONSTANT_THETA, kd=Control.controlConstants.KI_CONSTANT_THETA)
-        self.theta_y_controller = PIDController(kp=Control.controlConstants.KP_CONSTANT_THETA, ki=Control.controlConstants.KI_CONSTANT_THETA, kd=Control.controlConstants.KI_CONSTANT_THETA)
+        self.pos_x_controller = PIDController(kp=Control.controlConstants.KP_CONSTANT_POS, ki=Control.controlConstants.KI_CONSTANT_POS, kd=Control.controlConstants.KD_CONSTANT_POS)
+        self.pos_y_controller = PIDController(kp=Control.controlConstants.KP_CONSTANT_POS, ki=Control.controlConstants.KI_CONSTANT_POS, kd=Control.controlConstants.KD_CONSTANT_POS)
         
     def propogate(self):
         """ Simple propogator
@@ -51,7 +52,7 @@ class Simulation:
 
         # Propogate given ODE, stop when rocket crashes as indicated by this here event function
         def event(t,y,r,it,tt):
-            if t < 5 * ts:
+            if t < 10 * ts:
                 return 1
             else:
                 return y[2]
@@ -90,16 +91,16 @@ class Simulation:
                 self.errorHistory = error.reshape((1, 3))
             else:
                 self.errorHistory = np.append(self.errorHistory, error.reshape((1, 3)), axis=0)
-            
+
             #Find Actuator Values
             throttle = self.throttle_controller.control(-1 * error[2], dt, 'throttle')
-            theta_x = self.theta_x_controller.control(error[0], dt, 'thetax')
-            theta_y = self.theta_x_controller.control(error[1], dt, 'thetay')
-            
+            pos_x = self.pos_x_controller.control(-1 * error[0], dt, 'posx')
+            pos_y = self.pos_y_controller.control(-1 * error[1], dt, 'posy')
+
             # Log Current States
             rocket.engine.save_throttle(throttle)
-            rocket.engine.save_thetaX(theta_x)
-            rocket.engine.save_thetaY(theta_y)
+            rocket.engine.save_posX(pos_x)
+            rocket.engine.save_posY(pos_y)
             rocket.engine.save_thrust(rocket.engine.get_thrust(t, throttle))
             rocket.update_mass(dt)
 
@@ -116,8 +117,15 @@ class Simulation:
         T = rocket.engine.get_thrust(t, throttle)
         m = rocket.mass
         lever_arm = rocket.lever_arm
-        thetaX = rocket.engine.thetax
-        thetaY = rocket.engine.thetay
+        engine_length = rocket.engine.length
+        posX = rocket.engine.posx
+        posY = rocket.engine.posy
+
+        # Convert Actuator Positions to Cyclindrical Coords
+        gimbal_R = np.sqrt((posX ** 2) + (posY ** 2))
+        gimbal_theta = np.arctan2(posY, posX)
+        gimbal_psi = np.arctan2(gimbal_R, engine_length)
+
 
         # Build Statedot
         statedot = np.zeros(len(state))
@@ -127,21 +135,24 @@ class Simulation:
         statedot[0:3] = state[3:6]
         statedot[6:9] = state[9:12]
 
-        # These are in rocket frame
-        inertial_theta_X = state[6]
-        inertial_theta_Y = state[7]
         Ix = self.rocket.Ix
         Iy = self.rocket.Iy
         Iz = self.rocket.Iz
 
-        # Calculate Accelerations
-        aX = T * np.sin(thetaX + inertial_theta_X) / m
-        aY = T * np.sin(thetaY + inertial_theta_Y) / m
-        aZ = (T * np.cos(thetaX) * np.cos(thetaY) / m) - g
-        
+        # Rocket rotations
+        pitch = state[6]
+        yaw = state[7]
+        roll = state[8]
+        R = Simulator.math.euler_matrix(yaw, pitch, roll)
+
+        # Calculate Accelerations in rocket frame
+        aX = (T * np.sin(gimbal_psi) * np.cos(gimbal_theta) / m) + (-1 * g * R[0][2])
+        aY = (T * np.sin(gimbal_psi) * np.sin(gimbal_theta) / m) + (-1 * g * R[1][2])
+        aZ = (T * np.cos(gimbal_psi) / m) + (-1 * g * R[2][2])
+
         # Calculate Alphas
-        alphax = T * np.sin(thetaX) * lever_arm / Ix
-        alphay = T * np.sin(thetaY) * lever_arm / Iy
+        alphax = 0#T * np.cos(thetaY) * np.sin(thetaX) * lever_arm / Ix
+        alphay = 0#T * np.sin(thetaY) * np.sin(thetaX) * lever_arm / Iy
         alphaz = 0 / Iz #Assuming for now there is no rocket rotation
 
         statedot[3:6] = [aX, aY, aZ]

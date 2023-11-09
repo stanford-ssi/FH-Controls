@@ -30,6 +30,8 @@ class PIDController:
         new = p_term + i_term + d_term
         if type == 'throttle':
             new = self.throttle_checks(new)
+        if type == 'posx' or type == 'posy':
+            new = self.pos_checks(new)
 
         self.prev_error = error
         return new
@@ -40,3 +42,12 @@ class PIDController:
         if throttle > 1:
             return 1.0
         return throttle
+    
+    def pos_checks(self, pos):
+        if pos < -0.261799: # 15 Degrees
+            return -0.261799
+        if pos > 0.261799:
+            return 0.261799
+        return pos
+    
+

@@ -92,8 +92,7 @@ def dynamics(trajectory, ts, tf):
     return [x_pos, y_pos, z_pos, x_vel, y_vel, z_vel, x_acc, y_acc, z_acc, theta_x, theta_y, theta_z, omega_x, omega_y, omega_z, x_alpha, y_alpha, z_alpha]
 
 
-def plot_error_mass_throttle(error_mass_throttle, ts, tf):
-    names = ["Z Error (m)", "Mass (kg)", "Throttle"]
+def plot_3(error_mass_throttle, ts, tf, names):
     nrows, ncols = 1, 3
     fig, axs = plt.subplots(nrows, ncols)
     for i in range(3):

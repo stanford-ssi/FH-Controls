@@ -21,12 +21,15 @@ class Simulation:
         self.previous_time = 0
         self.current_step = 0
         self.ideal_trajectory = planned_trajectory
-        self.errorHistory = np.empty((0)) 
+        self.position_error_history = np.empty((0)) 
+        self.rotation_error_history = np.empty((0)) 
 
         #PID controller 
         self.throttle_controller = PIDController(kp=Control.controlConstants.KP_CONSTANT_THROTTLE, ki=Control.controlConstants.KI_CONSTANT_THROTTLE, kd=Control.controlConstants.KD_CONSTANT_THROTTLE)
         self.pos_x_controller = PIDController(kp=Control.controlConstants.KP_CONSTANT_POS, ki=Control.controlConstants.KI_CONSTANT_POS, kd=Control.controlConstants.KD_CONSTANT_POS)
         self.pos_y_controller = PIDController(kp=Control.controlConstants.KP_CONSTANT_POS, ki=Control.controlConstants.KI_CONSTANT_POS, kd=Control.controlConstants.KD_CONSTANT_POS)
+        self.theta_y_controller = PIDController(kp=Control.controlConstants.KP_CONSTANT_THETA, ki=Control.controlConstants.KI_CONSTANT_THETA, kd=Control.controlConstants.KD_CONSTANT_THETA)
+        self.theta_x_controller = PIDController(kp=Control.controlConstants.KP_CONSTANT_THETA, ki=Control.controlConstants.KI_CONSTANT_THETA, kd=Control.controlConstants.KD_CONSTANT_THETA)
         
     def propogate(self):
         """ Simple propogator
@@ -81,21 +84,35 @@ class Simulation:
         # Check if we are on an actual simulation timestep or if this is ode solving shenanigans
         if (t == 0) or (t >= t_vec[self.current_step] and self.previous_time < t_vec[self.current_step]):
 
-            # Calculate Error
-            ideal_state = ideal_trajectory[self.current_step]
-            error = state[0:3] - ideal_state
+            # Calculate Errors
+            ideal_position_state = ideal_trajectory[self.current_step]
+            ideal_rotational_state = [0, 0, 0]
+            position_error = state[0:3] - ideal_position_state
+            rotational_error = state[6:9] - ideal_rotational_state
             dt = t_vec[1] - t_vec[0]
 
             # Save error to error history
             if t == 0:
-                self.errorHistory = error.reshape((1, 3))
+                self.position_error_history = position_error.reshape((1, 3))
+                self.rotation_error_history = position_error.reshape((1, 3))
             else:
-                self.errorHistory = np.append(self.errorHistory, error.reshape((1, 3)), axis=0)
-
+                self.position_error_history = np.append(self.position_error_history, position_error.reshape((1, 3)), axis=0)
+                self.rotation_error_history = np.append(self.rotation_error_history, rotational_error.reshape((1, 3)), axis=0)
+    
             #Find Actuator Values
-            throttle = self.throttle_controller.control(-1 * error[2], dt, 'throttle')
-            pos_x = self.pos_x_controller.control(-1 * error[0], dt, 'posx')
-            pos_y = self.pos_y_controller.control(-1 * error[1], dt, 'posy')
+            throttle = 0.5#self.throttle_controller.control(-1 * position_error[2], dt, 'throttle')
+            # Check if we have angular velocity. Correct to verticle if so. Else, adjust position
+            if (state[9] > 0.001): 
+                pos_x = self.theta_x_controller.control(-1 * rotational_error[0], dt, 'posx')
+            else:
+                pos_x = self.pos_x_controller.control(-1 * position_error[0], dt, 'posx')
+            if (state[10] > 0.001):
+                pos_y = self.theta_y_controller.control(-1 * rotational_error[1], dt, 'posy')
+            else:
+                pos_y = self.pos_y_controller.control(-1 * position_error[1], dt, 'posy')
+            
+            pos_x = self.theta_x_controller.control(-1 * rotational_error[0], dt, 'posx')
+            pos_y = self.theta_y_controller.control(-1 * rotational_error[1], dt, 'posy')
 
             # Log Current States
             rocket.engine.save_throttle(throttle)
@@ -106,8 +123,8 @@ class Simulation:
 
             if not t == t_vec[-1]:
                 self.current_step += 1
-
-        self.previous_time = t
+            self.previous_time = t
+        
         return self.state_to_stateDot(t, state, rocket)
 
     def state_to_stateDot(self, t, state, rocket):
@@ -151,8 +168,8 @@ class Simulation:
         aZ = (T * np.cos(gimbal_psi) / m) + (-1 * g * R[2][2])
 
         # Calculate Alphas
-        alphax = 0#T * np.cos(thetaY) * np.sin(thetaX) * lever_arm / Ix
-        alphay = 0#T * np.sin(thetaY) * np.sin(thetaX) * lever_arm / Iy
+        alphax = T * np.sin(gimbal_psi) * np.cos(gimbal_theta) * lever_arm / Ix
+        alphay = T * np.sin(gimbal_psi) * np.sin(gimbal_theta) * lever_arm / Iy
         alphaz = 0 / Iz #Assuming for now there is no rocket rotation
 
         statedot[3:6] = [aX, aY, aZ]

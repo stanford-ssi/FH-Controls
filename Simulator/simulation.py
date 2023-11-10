@@ -151,11 +151,7 @@ class Simulation:
 
         statedot[0:3] = state[3:6]
         statedot[6:9] = state[9:12]
-
-        Ix = self.rocket.Ix
-        Iy = self.rocket.Iy
-        Iz = self.rocket.Iz
-
+        
         # Rocket rotations
         pitch = state[6]
         yaw = state[7]
@@ -168,9 +164,12 @@ class Simulation:
         aZ = (T * np.cos(gimbal_psi) / m) + (-1 * g * R[2][2])
 
         # Calculate Alphas
-        alphax = T * np.sin(gimbal_psi) * np.cos(gimbal_theta) * lever_arm / Ix
-        alphay = T * np.sin(gimbal_psi) * np.sin(gimbal_theta) * lever_arm / Iy
-        alphaz = 0 / Iz #Assuming for now there is no rocket rotation
+        torque = [T * np.sin(gimbal_psi) * np.cos(gimbal_theta) * lever_arm,
+                  T * np.sin(gimbal_psi) * np.sin(gimbal_theta) * lever_arm,
+                  0]
+        alphax =  torque[0] * rocket.I_inv[0,0] + torque[1] * rocket.I_inv[0,1] + torque[2] * rocket.I_inv[0,2]
+        alphay =  torque[0] * rocket.I_inv[1,0] + torque[1] * rocket.I_inv[1,1] + torque[2] * rocket.I_inv[1,2]
+        alphaz =  torque[0] * rocket.I_inv[2,0] + torque[1] * rocket.I_inv[2,1] + torque[2] * rocket.I_inv[2,2]
 
         statedot[3:6] = [aX, aY, aZ]
         statedot[9:12] = [alphax, alphay, alphaz]

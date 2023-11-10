@@ -44,10 +44,10 @@ class PIDController:
         return throttle
     
     def pos_checks(self, pos):
-        if pos < -0.261799: # 15 Degrees
-            return -0.261799
-        if pos > 0.261799:
-            return 0.261799
+        if pos < -0.2: #m
+            return pos
+        if pos > 0.2:
+            return pos
         return pos
     
 

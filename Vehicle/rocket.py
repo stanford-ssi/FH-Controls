@@ -14,9 +14,10 @@ class Rocket:
         self.massHistory = np.empty(shape=(0))
         
         self.lever_arm = 0.5
-        self.Ix = 1
-        self.Iy = 1
-        self.Iz = 1
+        self.I = np.array([[1, 0, 0],
+                           [0, 1, 0],
+                           [0, 0, 1]])
+        self.I_inv = np.linalg.inv(self.I)
         
     def update_mass(self, dt):
         """ Outputs the expected mass based on it

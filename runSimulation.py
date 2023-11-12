@@ -5,7 +5,7 @@ from PathPlanner.plan import PlannedTrajectory
 
 # Simulation Variables
 # State is all relative to global frame except Z rotation which is rocket frame
-state_0 = np.array([1, 0, 0, 0, 0, 0, 0.001, 0, 0, 0, 0, 0]) # Start State [X, Y, Z, VX, VY, VZ, THX, THY, THZ, OMX, OMY, OMZ]
+state_0 = np.array([0.1, 0, 0, 0, 0, 0, 0.001, 0, 0, 0, 0, 0]) # Start State [X, Y, Z, VX, VY, VZ, THX, THY, THZ, OMX, OMY, OMZ]
 tf = 10
 ts = 0.1
 
@@ -29,7 +29,7 @@ dynamics_plot_names = ["X Position", "Y Position", "Z Position", "X Velocity", "
 rotational_dynamics_plot_names = ["THX", "THY", "THZ", "OMX", "OMY", "OMZ", "ALPHAX", "ALPHAY", "ALPHAZ"]
 
 # Graphs
-#Graphing.plotter.animate_3DOF_trajectory(trajectory, planned_trajectory)
+Graphing.plotter.animate_3DOF_trajectory(trajectory, planned_trajectory)
 Graphing.plotter.plot_3(position_error, ts, tf, error_names)
 Graphing.plotter.plot_3(rotation_error, ts, tf, rot_error_names)
 Graphing.plotter.plot_3(controls, ts, tf, control_names)

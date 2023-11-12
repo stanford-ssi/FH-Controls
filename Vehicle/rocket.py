@@ -16,7 +16,7 @@ class Rocket:
         self.lever_arm = 0.5
         self.I = np.array([[1, 0, 0],
                            [0, 1, 0],
-                           [0, 0, 1]])
+                           [0, 0, 5]])
         self.I_inv = np.linalg.inv(self.I)
         
     def update_mass(self, dt):

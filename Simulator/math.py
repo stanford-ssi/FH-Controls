@@ -138,3 +138,89 @@ def euler_from_matrix(matrix, axes='sxyz'):
         ax, az = az, ax
     return ax, ay, az
 
+
+"""
+Coordinate Transformation functions, by Jerry
+"""
+
+
+def transform_ground_to_rocket(coordinates, rpy_angles):
+    """
+    Transforms ground frame coordinates to rocket frame coordinates.
+    - Transformation matrix is (inverse Yaw) (inverse Pitch) (inverse Roll)
+    - Recall yaw matrix is the matrix for rotation about z-axis by yaw angle;
+    - Recall inverse of a rotation matrix is rotation about the same axis by negative of the rotation angle
+    :param coordinates: (list[3]) coordinates in ground frame
+    :param rpy_angles: (list[3]) z-axis, y-axis, x-axis rotations (i.e. yaw, pitch, roll), in this exact order
+    :return: 3x1 np array (column vector of 3 elements) specifying coordinates in rocket frame
+    """
+    if len(coordinates) != 3 or len(rpy_angles) != 3:
+        raise ValueError("List of angles not of right length (expected 3 values per list)!")
+
+    # matrix product only works on column vectors. So reshape to a column vector
+    ret_coordinates = np.array(coordinates).reshape(3, 1)
+    # multiply by inverse of z-axis rotation Rot(yaw_angle, yaw_axis)
+    ret_coordinates = np.matmul(rotation_matrix(-rpy_angles[0], 'z'), ret_coordinates)
+    # multiply by inverse of y-axis rotation
+    ret_coordinates = np.matmul(rotation_matrix(-rpy_angles[1], 'y'), ret_coordinates)
+    # multiply by inverse of x-axis rotation
+    ret_coordinates = np.matmul(rotation_matrix(-rpy_angles[2], 'x'), ret_coordinates)
+
+    return ret_coordinates.reshape(3)
+
+
+def transform_rocket_to_ground(coordinates, rpy_angles):
+    """
+    Transforms rocket frame coordinates to ground frame coordinates;
+    - Inverse of transformation from rocket frame to ground frame
+    - Hence, equal to (Yaw) (Pitch) (Roll), i.e. R_z R_y R_x
+    :param coordinates: list of coordinates in ground frame
+    :param rpy_angles: (list[3]) angles for rotation about z, y, x, IN THIS EXACT ORDER
+    :return: 3x1 np array (column vector of 3 elements) specifying coordinates in rocket frame
+    """
+    if len(coordinates) != 3 or len(rpy_angles) != 3:
+        raise ValueError("List of angles / axis not of right length (expected 3 values per list)!")
+
+    # matrix product only works on column vectors. So reshape to a column vector
+    ret_coordinates = np.array(coordinates).reshape(3, 1)
+    # multiply by matrix for roll / rot. about X
+    ret_coordinates = np.matmul(rotation_matrix(rpy_angles[2], 'x'), ret_coordinates)
+    # multiply by matrix for pitch / rot. about Y
+    ret_coordinates = np.matmul(rotation_matrix(rpy_angles[1], 'y'), ret_coordinates)
+    # multiply by matrix for yaw / rot. about Z
+    ret_coordinates = np.matmul(rotation_matrix(rpy_angles[0], 'z'), ret_coordinates)
+
+    return ret_coordinates.reshape(3)
+
+
+def rotation_matrix(angle, axis="z"):
+    """
+    Helper Function Rotation Matrix Function. Returns Rotation Matrix R(axes, angle)
+    :param angle: rotation angle
+    :param axis: axis to rotate about
+    :return: 3d numpy array that specifies the rotation
+    """
+    if axis == "z":
+        matrix = np.array([
+            [np.cos(angle), -np.sin(angle), 0],
+            [np.sin(angle), np.cos(angle), 0],
+            [0, 0, 1]
+        ])
+        return matrix
+    elif axis == "y":
+        matrix = np.array([
+            [np.cos(angle), 0, np.sin(angle)],
+            [0, 1, 0],
+            [-np.sin(angle), 0, np.cos(angle)]
+        ])
+        return matrix
+    elif axis == "x":
+        matrix = np.array([
+            [1, 0, 0],
+            [0, np.cos(angle), -np.sin(angle)],
+            [0, np.sin(angle), np.cos(angle)]
+        ])
+        return matrix
+    else:
+        raise ValueError(f"'{axis}' is not a valid 3D rotation axis!")
+

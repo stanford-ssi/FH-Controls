@@ -100,13 +100,13 @@ class Simulation:
                 self.rotation_error_history = np.append(self.rotation_error_history, rotational_error.reshape((1, 3)), axis=0)
     
             #Find Actuator Values
-            throttle = 0.5#self.throttle_controller.control(-1 * position_error[2], dt, 'throttle')
+            throttle = self.throttle_controller.control(-1 * position_error[2], dt, 'throttle')
             # Check if we have angular velocity. Correct to verticle if so. Else, adjust position
-            if (state[9] > 0.001): 
+            if (state[9] > 0.0001): 
                 pos_x = self.theta_x_controller.control(-1 * rotational_error[0], dt, 'posx')
             else:
                 pos_x = self.pos_x_controller.control(-1 * position_error[0], dt, 'posx')
-            if (state[10] > 0.001):
+            if (state[10] > 0.0001):
                 pos_y = self.theta_y_controller.control(-1 * rotational_error[1], dt, 'posy')
             else:
                 pos_y = self.pos_y_controller.control(-1 * position_error[1], dt, 'posy')
@@ -147,8 +147,6 @@ class Simulation:
         # Build Statedot
         statedot = np.zeros(len(state))
 
-        # ROTATE GLOBAL STATE INTO ROCKETFRAME
-
         statedot[0:3] = state[3:6]
         statedot[6:9] = state[9:12]
         
@@ -157,11 +155,17 @@ class Simulation:
         yaw = state[7]
         roll = state[8]
         R = Simulator.math.euler_matrix(yaw, pitch, roll)
+        R_inv = np.linalg.inv(R)[0:3, 0:3]
 
         # Calculate Accelerations in rocket frame
-        aX = (T * np.sin(gimbal_psi) * np.cos(gimbal_theta) / m) + (-1 * g * R[0][2])
-        aY = (T * np.sin(gimbal_psi) * np.sin(gimbal_theta) / m) + (-1 * g * R[1][2])
-        aZ = (T * np.cos(gimbal_psi) / m) + (-1 * g * R[2][2])
+        aX_rf = (T * np.sin(gimbal_psi) * np.cos(gimbal_theta) / m) + (-1 * g * R[0][2])
+        aY_rf = (T * np.sin(gimbal_psi) * np.sin(gimbal_theta) / m) + (-1 * g * R[1][2])
+        aZ_rf = (T * np.cos(gimbal_psi) / m) + (-1 * g * R[2][2])
+
+        # Convert Accelerations from rocket frame to global frame
+        aX = R_inv[0][0] * aX_rf + R_inv[0][1] * aY_rf + R_inv[0][2] * aZ_rf
+        aY = R_inv[1][0] * aX_rf + R_inv[1][1] * aY_rf + R_inv[1][2] * aZ_rf
+        aZ = R_inv[2][0] * aX_rf + R_inv[2][1] * aY_rf + R_inv[2][2] * aZ_rf
 
         # Calculate Alphas
         torque = [T * np.sin(gimbal_psi) * np.cos(gimbal_theta) * lever_arm,
@@ -174,6 +178,5 @@ class Simulation:
         statedot[3:6] = [aX, aY, aZ]
         statedot[9:12] = [alphax, alphay, alphaz]
 
-        # ROTATE ROCKETFRAME STATEDOT INTO GLOBAL FRAME
         return statedot
     

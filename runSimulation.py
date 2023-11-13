@@ -5,7 +5,7 @@ from PathPlanner.plan import PlannedTrajectory
 
 # Simulation Variables
 # State is all relative to global frame except Z rotation which is rocket frame
-state_0 = np.array([0.1, 0, 0, 0, 0, 0, 0.001, 0, 0, 0, 0, 0]) # Start State [X, Y, Z, VX, VY, VZ, THX, THY, THZ, OMX, OMY, OMZ]
+state_0 = np.array([0.1, 0, 0, 0, 0, 0, 0.01, 0, 0, 0, 0, 0]) # Start State [X, Y, Z, VX, VY, VZ, THX, THY, THZ, OMX, OMY, OMZ]
 tf = 10
 ts = 0.1
 

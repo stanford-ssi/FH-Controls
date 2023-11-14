@@ -18,6 +18,8 @@ class Rocket:
                            [0, 1, 0],
                            [0, 0, 5]])
         self.I_inv = np.linalg.inv(self.I)
+
+        self.tip_angle = Vehicle.rocketConstants.ROCKET_MAX_TIP
         
     def update_mass(self, dt):
         """ Outputs the expected mass based on it

@@ -9,12 +9,11 @@ class PIDController:
         self.kp = kp
         self.ki = ki
         self.kd = kd
-        self.prev_error = 0
         self.integral = 0
 
     #self-note for concern: if there are any errors with this code, it's like with the z_error and error portions, since z_error = error[2] and I'm unsure if this is all correct. 
     
-    def control(self, error, dt, type):
+    def control(self, error, prev_error, dt, type):
         # P term
         p_term = self.kp * error
         
@@ -23,7 +22,7 @@ class PIDController:
         i_term = self.ki * self.integral
         
         # D term
-        derivative = (error - self.prev_error) / dt
+        derivative = (error - prev_error) / dt
         d_term = self.kd * derivative
 
         # Update throttle and previous error
@@ -33,7 +32,6 @@ class PIDController:
         if type == 'posx' or type == 'posy':
             new = self.pos_checks(new)
 
-        self.prev_error = error
         return new
 
     def throttle_checks(self, throttle):

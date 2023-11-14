@@ -5,7 +5,9 @@ from PathPlanner.plan import PlannedTrajectory
 
 # Simulation Variables
 # State is all relative to global frame except Z rotation which is rocket frame
-state_0 = np.array([0.1, 0, 0, 0, 0, 0, 0.01, 0, 0, 0, 0, 0]) # Start State [X, Y, Z, VX, VY, VZ, THX, THY, THZ, OMX, OMY, OMZ]
+# Pitch is defined as angle from upward z axis towards pos x axis, yaw is angle from upward z towards pos y, and roll is ccw looking down on rocket
+# Rotation order yaw, pitch, roll
+state_0 = np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) # Start State [X, Y, Z, VX, VY, VZ, THX, THY, THZ, OMX, OMY, OMZ]
 tf = 10
 ts = 0.1
 

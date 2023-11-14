@@ -3,7 +3,6 @@ import scipy.integrate
 import Vehicle.engine
 import Vehicle.rocket
 from Control.controller import PIDController
-import Simulator.math
 import Control.controlConstants
 from scipy.spatial.transform import Rotation
 
@@ -22,8 +21,8 @@ class Simulation:
         self.previous_time = 0
         self.current_step = 0
         self.ideal_trajectory = planned_trajectory
-        self.position_error_history = np.empty((0)) 
-        self.rotation_error_history = np.empty((0)) 
+        self.position_error_history = np.array([[0,0,0]]) 
+        self.rotation_error_history = np.array([[0,0,0]]) 
 
         #PID controller 
         self.throttle_controller = PIDController(kp=Control.controlConstants.KP_CONSTANT_THROTTLE, ki=Control.controlConstants.KI_CONSTANT_THROTTLE, kd=Control.controlConstants.KD_CONSTANT_THROTTLE)
@@ -88,32 +87,30 @@ class Simulation:
             # Calculate Errors
             ideal_position_state = ideal_trajectory[self.current_step]
             ideal_rotational_state = [0, 0, 0]
-            position_error = state[0:3] - ideal_position_state
-            rotational_error = state[6:9] - ideal_rotational_state
+            position_error = ideal_position_state - state[0:3]
+            rotational_error = ideal_rotational_state - state[6:9]
             dt = t_vec[1] - t_vec[0]
 
-            # Save error to error history
             if t == 0:
                 self.position_error_history = position_error.reshape((1, 3))
-                self.rotation_error_history = position_error.reshape((1, 3))
+                self.rotation_error_history = rotational_error.reshape((1, 3))
+
+            # Find Actuator Valuess
+            throttle = self.throttle_controller.control(position_error[2], self.position_error_history[-1][2], dt, 'throttle')
+            # Check if we have angular velocity. Correct to verticle if so. Else, adjust position
+            if (abs(state[6]) > self.rocket.tip_angle): 
+                pos_x = self.theta_x_controller.control(rotational_error[0], self.rotation_error_history[-1][0], dt, 'posx')
             else:
+                pos_x = self.pos_x_controller.control(position_error[0], self.position_error_history[-1][0], dt, 'posx')
+            if (abs(state[7]) > self.rocket.tip_angle):
+                pos_y = self.theta_y_controller.control(rotational_error[1], self.rotation_error_history[-1][1], dt, 'posy')
+            else:
+                pos_y = self.pos_y_controller.control(position_error[1], self.position_error_history[-1][1], dt, 'posy')
+
+            # Save error to error history
+            if not t == 0:
                 self.position_error_history = np.append(self.position_error_history, position_error.reshape((1, 3)), axis=0)
                 self.rotation_error_history = np.append(self.rotation_error_history, rotational_error.reshape((1, 3)), axis=0)
-    
-            #Find Actuator Values
-            throttle = self.throttle_controller.control(-1 * position_error[2], dt, 'throttle')
-            # Check if we have angular velocity. Correct to verticle if so. Else, adjust position
-            if (state[9] > 0.0001): 
-                pos_x = self.theta_x_controller.control(-1 * rotational_error[0], dt, 'posx')
-            else:
-                pos_x = self.pos_x_controller.control(-1 * position_error[0], dt, 'posx')
-            if (state[10] > 0.0001):
-                pos_y = self.theta_y_controller.control(-1 * rotational_error[1], dt, 'posy')
-            else:
-                pos_y = self.pos_y_controller.control(-1 * position_error[1], dt, 'posy')
-            
-            pos_x = self.theta_x_controller.control(-1 * rotational_error[0], dt, 'posx')
-            pos_y = self.theta_y_controller.control(-1 * rotational_error[1], dt, 'posy')
 
             # Log Current States
             rocket.engine.save_throttle(throttle)
@@ -147,7 +144,6 @@ class Simulation:
 
         # Build Statedot
         statedot = np.zeros(len(state))
-
         statedot[0:3] = state[3:6]
         statedot[6:9] = state[9:12]
         

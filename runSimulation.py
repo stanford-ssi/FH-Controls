@@ -22,11 +22,11 @@ error_names = ["X Error", "Y Error", "Z Error"]
 rotation_error = [sim.rotation_error_history[:,0], sim.rotation_error_history[:,1], sim.rotation_error_history[:,2]]
 rot_error_names = ["Pitch Error", "Yaw Error", "Roll Error"]
 controls = [sim.rocket.engine.posx_history, sim.rocket.engine.posy_history, sim.rocket.engine.throttle_history]
-control_names = ["PosX", "PosY", "Throttle"]
+control_names = ["X Actuator Position", "Y Actuator Position", "Throttle"]
 dynamics = Graphing.plotter.dynamics(trajectory, ts, tf)
 
 dynamics_plot_names = ["X Position", "Y Position", "Z Position", "X Velocity", "Y Velocity", "Z Velocity", "X Acceleration", "Y Acceleration", "Z Acceleration"]
-rotational_dynamics_plot_names = ["THX", "THY", "THZ", "OMX", "OMY", "OMZ", "ALPHAX", "ALPHAY", "ALPHAZ"]
+rotational_dynamics_plot_names = ["Pitch", "Yaw", "Roll", "Pitch Rate", "Yaw Rate", "Roll Rate", "Pitch Acceleration", "Yaw Acceleration", "Roll Acceleration"]
 
 # Graphs
 Graphing.plotter.animate_3DOF_trajectory(trajectory, planned_trajectory)

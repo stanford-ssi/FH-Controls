@@ -5,6 +5,7 @@ import Vehicle.rocket
 from Control.controller import PIDController
 import Simulator.math
 import Control.controlConstants
+from scipy.spatial.transform import Rotation
 
 
 # constants (SHOULD WE HAVE THIS IN A SEPARATE FILE LIKE OTHER CONSTANTS?)
@@ -151,11 +152,11 @@ class Simulation:
         statedot[6:9] = state[9:12]
         
         # Rocket rotations
-        pitch = state[6]
-        yaw = state[7]
-        roll = state[8]
-        R = Simulator.math.euler_matrix(yaw, pitch, roll)
-        R_inv = np.linalg.inv(R)[0:3, 0:3]
+        pitch = state[6] # Angle from rocket from pointing up towards positive x axis
+        yaw = state[7] # Angle from rocket from pointing up towards positive y axis
+        roll = state[8] # Roll, ccw when looking down on rocket
+        R = Rotation.from_euler('xyz', [yaw, -pitch, -roll]).as_matrix()
+        R_inv = np.linalg.inv(R)
 
         # Calculate Accelerations in rocket frame
         aX_rf = (T * np.sin(gimbal_psi) * np.cos(gimbal_theta) / m) + (-1 * g * R[0][2])

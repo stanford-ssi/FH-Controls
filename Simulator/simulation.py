@@ -96,6 +96,7 @@ class Simulation:
                 self.rotation_error_history = rotational_error.reshape((1, 3))
 
             # Find Actuator Valuess
+            # STEVE BRUNTON VIDEOS, generalized pid control with jacobian
             throttle = self.throttle_controller.control(position_error[2], self.position_error_history[-1][2], dt, 'throttle')
             # Check if we have angular velocity. Correct to verticle if so. Else, adjust position
             if (abs(state[6]) > self.rocket.tip_angle): 
@@ -135,17 +136,18 @@ class Simulation:
         engine_length = rocket.engine.length
         posX = rocket.engine.posx
         posY = rocket.engine.posy
+        v = state[3:6]
+        w = state[9:12]
 
         # Convert Actuator Positions to Cyclindrical Coords
         gimbal_R = np.sqrt((posX ** 2) + (posY ** 2))
         gimbal_theta = np.arctan2(posY, posX)
         gimbal_psi = np.arctan2(gimbal_R, engine_length)
 
-
         # Build Statedot
         statedot = np.zeros(len(state))
-        statedot[0:3] = state[3:6]
-        statedot[6:9] = state[9:12]
+        statedot[0:3] = v
+        statedot[6:9] = w
         
         # Rocket rotations
         pitch = state[6] # Angle from rocket from pointing up towards positive x axis
@@ -158,22 +160,20 @@ class Simulation:
         aX_rf = (T * np.sin(gimbal_psi) * np.cos(gimbal_theta) / m) + (-1 * g * R[0][2])
         aY_rf = (T * np.sin(gimbal_psi) * np.sin(gimbal_theta) / m) + (-1 * g * R[1][2])
         aZ_rf = (T * np.cos(gimbal_psi) / m) + (-1 * g * R[2][2])
+        a_rf = np.array([aX_rf, aY_rf, aZ_rf])
 
         # Convert Accelerations from rocket frame to global frame
-        aX = R_inv[0][0] * aX_rf + R_inv[0][1] * aY_rf + R_inv[0][2] * aZ_rf
-        aY = R_inv[1][0] * aX_rf + R_inv[1][1] * aY_rf + R_inv[1][2] * aZ_rf
-        aZ = R_inv[2][0] * aX_rf + R_inv[2][1] * aY_rf + R_inv[2][2] * aZ_rf
+        a_global = np.dot(R_inv, a_rf)
 
         # Calculate Alphas
-        torque = [T * np.sin(gimbal_psi) * np.cos(gimbal_theta) * lever_arm,
-                  T * np.sin(gimbal_psi) * np.sin(gimbal_theta) * lever_arm,
-                  0]
-        alphax =  torque[0] * rocket.I_inv[0,0] + torque[1] * rocket.I_inv[0,1] + torque[2] * rocket.I_inv[0,2]
-        alphay =  torque[0] * rocket.I_inv[1,0] + torque[1] * rocket.I_inv[1,1] + torque[2] * rocket.I_inv[1,2]
-        alphaz =  torque[0] * rocket.I_inv[2,0] + torque[1] * rocket.I_inv[2,1] + torque[2] * rocket.I_inv[2,2]
+        torque = np.array([T * np.sin(gimbal_psi) * np.cos(gimbal_theta) * lever_arm,
+                          T * np.sin(gimbal_psi) * np.sin(gimbal_theta) * lever_arm,
+                          0])
+        I_dot = rocket.get_I_previous()
+        alphas = np.dot(rocket.I_inv, torque - np.cross(w, np.dot(rocket.I, w)) - np.dot(I_dot, w))
 
-        statedot[3:6] = [aX, aY, aZ]
-        statedot[9:12] = [alphax, alphay, alphaz]
+        statedot[3:6] = a_global.tolist()
+        statedot[9:12] = alphas.tolist()
 
         return statedot
     

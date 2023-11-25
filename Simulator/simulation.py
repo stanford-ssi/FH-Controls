@@ -5,14 +5,12 @@ import Vehicle.rocket
 from Control.controller import PIDController
 import Control.controlConstants
 from scipy.spatial.transform import Rotation
-
-
-# constants (SHOULD WE HAVE THIS IN A SEPARATE FILE LIKE OTHER CONSTANTS?)
-g = 9.81
+from Simulator.simulationConstants import GRAVITY as g
+from Simulator.simulationConstants import RHO as rho
 
 class Simulation:
     """ Class Representing the Rocket and associated data"""
-    def __init__(self, timefinal, simulation_timestep, starting_state, planned_trajectory):
+    def __init__(self, timefinal, simulation_timestep, starting_state, wind, planned_trajectory):
         # Create Engine Object inside Rocket
         self.state = starting_state
         self.rocket = Vehicle.rocket.Rocket(simulation_timestep)
@@ -23,6 +21,7 @@ class Simulation:
         self.ideal_trajectory = planned_trajectory
         self.position_error_history = np.array([[0,0,0]]) 
         self.rotation_error_history = np.array([[0,0,0]]) 
+        self.wind = wind
 
         #PID controller 
         self.throttle_controller = PIDController(kp=Control.controlConstants.KP_CONSTANT_THROTTLE, ki=Control.controlConstants.KI_CONSTANT_THROTTLE, kd=Control.controlConstants.KD_CONSTANT_THROTTLE)
@@ -119,6 +118,7 @@ class Simulation:
             rocket.engine.save_posY(pos_y)
             rocket.engine.save_thrust(rocket.engine.get_thrust(t, throttle))
             rocket.update_mass(dt)
+            rocket.update_I()
 
             if not t == t_vec[-1]:
                 self.current_step += 1
@@ -132,7 +132,7 @@ class Simulation:
         throttle = rocket.engine.throttle
         T = rocket.engine.get_thrust(t, throttle)
         m = rocket.mass
-        lever_arm = rocket.lever_arm
+        lever_arm = rocket.com
         engine_length = rocket.engine.length
         posX = rocket.engine.posx
         posY = rocket.engine.posy
@@ -156,18 +156,23 @@ class Simulation:
         R = Rotation.from_euler('xyz', [yaw, -pitch, -roll]).as_matrix()
         R_inv = np.linalg.inv(R)
 
+        # Wind rotation into rocket frame
+        wind_rf = np.dot(R, self.wind + v)
+        wind_force = rocket.find_wind_force(wind_rf, rho)
+        wind_moment = rocket.find_wind_moment(wind_rf, rho)
+
         # Calculate Accelerations in rocket frame
-        aX_rf = (T * np.sin(gimbal_psi) * np.cos(gimbal_theta) / m) + (-1 * g * R[0][2])
-        aY_rf = (T * np.sin(gimbal_psi) * np.sin(gimbal_theta) / m) + (-1 * g * R[1][2])
-        aZ_rf = (T * np.cos(gimbal_psi) / m) + (-1 * g * R[2][2])
+        aX_rf = (T * np.sin(gimbal_psi) * np.cos(gimbal_theta) / m) + (-1 * g * R[0][2]) + (wind_force[0] / m)
+        aY_rf = (T * np.sin(gimbal_psi) * np.sin(gimbal_theta) / m) + (-1 * g * R[1][2]) + (wind_force[1] / m)
+        aZ_rf = (T * np.cos(gimbal_psi) / m) + (-1 * g * R[2][2]) + (wind_force[2] / m)
         a_rf = np.array([aX_rf, aY_rf, aZ_rf])
 
         # Convert Accelerations from rocket frame to global frame
         a_global = np.dot(R_inv, a_rf)
 
         # Calculate Alphas
-        torque = np.array([T * np.sin(gimbal_psi) * np.cos(gimbal_theta) * lever_arm,
-                          T * np.sin(gimbal_psi) * np.sin(gimbal_theta) * lever_arm,
+        torque = np.array([(T * np.sin(gimbal_psi) * np.cos(gimbal_theta) * lever_arm) + wind_moment[0],
+                          (T * np.sin(gimbal_psi) * np.sin(gimbal_theta) * lever_arm) + wind_moment[1],
                           0])
         I_dot = rocket.get_I_previous()
         alphas = np.dot(rocket.I_inv, torque - np.cross(w, np.dot(rocket.I, w)) - np.dot(I_dot, w))

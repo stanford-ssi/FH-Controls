@@ -12,7 +12,7 @@ tf = 10
 ts = 0.1
 
 # Setup Simulation
-planned_trajectory = PlannedTrajectory(50, tf, [0, 0, 0], ts).trajectory
+planned_trajectory = PlannedTrajectory.trajectory
 sim = Simulation(tf, ts, state_0, planned_trajectory)
 # Run Simulation
 trajectory = sim.propogate()

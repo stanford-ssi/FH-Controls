@@ -15,5 +15,6 @@ def z_piecewise_cubic(t):
     else:
         return -1.6 * ((t - 10) ** 3)
 
-#For Plotting
-trajectory = np.array([0, 0, piecewise_cubic(t) for t in time]) 
+#For Plotting (structure is slightly weird just because we need this to be called to runSimulation.py
+def trajectory(): 
+    return np.array([0, 0, piecewise_cubic(t) for t in time]) 

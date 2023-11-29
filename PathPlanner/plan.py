@@ -1,24 +1,19 @@
+#This will be better soon
 import numpy as np
-from scipy.optimize import linprog
-import matplotlib.pyplot as plt
-import Graphing.plotter
 
-H_value_updated = 50  # New maximum height
+# Time (t start = 0 seconds, t finish = 10 seconds, dt = 0.1 * 100 = 10 seconds (tf - ti))
+time = np.linspace(0, 10, 100)
 
-# Recalculate the height values with the updated maximum height
-h1_values_updated = np.array([-16*H_value_updated/T_value**3 * t**3 + 12*H_value_updated/T_value**2 * t**2 for t in t_ascent])
-h2_values_updated = np.array([16*H_value_updated/T_value**3 * t**3 - 36*H_value_updated/T_value**2 * t**2 + 24*H_value_updated/T_value * t - 4*H_value_updated for t in t_descent])
+#Four-Piece Function for 
+def z_piecewise_cubic(t):
+    if t <= 2.5:
+        return 1.6 * (t ** 3)
+    elif t <= 5:
+        return 50 + 1.6 * ((t - 5) ** 3)
+    elif t <= 7.5:
+        return 50 - 1.6 * ((t - 5) ** 3)
+    else:
+        return -1.6 * ((t - 10) ** 3)
 
-# Combine the ascent and descent for plotting
-h_combined_updated = np.concatenate([h1_values_updated, h2_values_updated])
-
-# Plotting the updated trajectory
-plt.figure(figsize=(10, 6))
-plt.plot(t_combined, h_combined_updated, label='Height vs Time')
-plt.title('Cubic Ascent and Descent Trajectory (50m Height)')
-plt.xlabel('Time (s)')
-plt.ylabel('Height (m)')
-plt.grid(True)
-plt.legend()
-plt.show()
-    
+#For Plotting
+trajectory = np.array([0, 0, piecewise_cubic(t) for t in time]) 

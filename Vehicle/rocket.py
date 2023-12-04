@@ -14,7 +14,10 @@ class Rocket:
         self.mass = self.mass_noEngine + self.engine.full_mass #Rocket Starts Fully Fueled
         self.massHistory = np.empty(shape=(0))
         
-        self.com = 1.25
+        # Cg and Cp locations, measured from top of rocket
+        self.com = 0.75
+        self.cop = Vehicle.rocketConstants.Cp
+
         self.I_prev = np.array([[1, 0, 0],
                            [0, 1, 0],
                            [0, 0, 5]])
@@ -24,7 +27,6 @@ class Rocket:
         self.I_inv = np.linalg.inv(self.I)
 
         self.tip_angle = Vehicle.rocketConstants.ROCKET_MAX_TIP
-        self.shape = Vehicle.rocketConstants.ROCKET_SHAPE
         
     def update_mass(self, dt):
         """ Outputs the expected mass based on it
@@ -57,12 +59,15 @@ class Rocket:
             force - wind force vector in rf
             
         """
-        force = np.zeros((3))
-        for i in range(len(self.shape)):
-            force[0] += 0.5 * rho * (wind[0] ** 2) * self.shape[i][1] * self.shape[i][2] * (wind[0]/abs(wind[0]))
-            force[1] += 0.5 * rho * (wind[1] ** 2) * self.shape[i][0] * self.shape[i][2] * (wind[1]/abs(wind[1]))
-            force[2] += 0.5 * rho * (wind[2] ** 2) * self.shape[i][0] * self.shape[i][1] * (wind[2]/abs(wind[2]))
-        return force
+        alpha = np.arccos(np.dot(wind, [0,0,1]) / np.linalg.norm(wind))
+        Cn = Vehicle.rocketConstants.Cna * alpha
+        Aref = Vehicle.rocketConstants.AREF
+        Fn = 0.5 * Cn * rho * (np.linalg.norm(wind) ** 2) * Aref #Normal Force on Rocket
+        Fx = Fn * wind[0] / ((np.sqrt((wind[0] ** 2) + (wind[1] ** 2))))
+        Fy = Fn * wind[1] / ((np.sqrt((wind[0] ** 2) + (wind[1] ** 2))))
+        Fz = 0.5 * Vehicle.rocketConstants.Cd * rho * (wind[2] ** 2) * np.pi * ((Vehicle.rocketConstants.ROCKET_DIAMETER / 2) ** 2)
+        Force = [Fx, Fy, Fz]
+        return Force
 
     def find_wind_moment(self, wind, rho):
         """ Outputs the expected wind moment [Mx, My, Mz]. Assumes symmetric rocket so 0 moment in roll. Can update later.
@@ -76,23 +81,9 @@ class Rocket:
             
         """
 
-        force = self.find_wind_force(wind, rho)
-        sum = np.zeros(3)
-        component_start_pos = 0
-        total_area = np.zeros(3)
-
-        # sum area times distance from bottom of rocket to find cop for each side
-        for i in reversed(range(len(self.shape))):
-            sum[0] += (self.shape[i][0] * self.shape[i][2]) * (component_start_pos + (self.shape[i][2] / 2))
-            sum[1] += (self.shape[i][1] * self.shape[i][2]) * (component_start_pos + (self.shape[i][2] / 2))
-            component_start_pos += self.shape[i][2]
-            total_area[0] += self.shape[i][0] * self.shape[i][2]
-            total_area[1] += self.shape[i][1] * self.shape[i][2]
-            total_area[2] += self.shape[i][0] * self.shape[i][1]
-        
-        # Center of Pressure Calc for each side
-        cop = np.divide(sum, total_area)    
-
-        # Moment from wind force times distance between cg and cp
-        moment = [force[i] * (cop[i] - self.com) for i in range(len(force) - 1)]
+        force = self.find_wind_force(wind, rho)[0:2]
+        lever_arm = self.com - self.cop
+        Mx = force[0] * lever_arm
+        My = force[1] * lever_arm
+        moment = [Mx, My, 0]
         return moment

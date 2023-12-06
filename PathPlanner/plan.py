@@ -19,7 +19,7 @@ class PlannedTrajectory:
             return 0
 
     def xyz_trajectory(self):
-        time = np.linspace(0, 10, 100)
+        time = np.linspace(0, int(10/0.1)*0.1, num=int(10/0.1)+1) 
         trajectory = [[0, 0, self.z_piecewise_cubic(t)] for t in time]
         return np.array(trajectory)
 

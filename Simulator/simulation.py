@@ -53,8 +53,9 @@ class Simulation:
         t = (0,self.timefinal)
 
         # Propogate given ODE, stop when rocket crashes as indicated by this here event function
-        def event(t,y,r,it,tt):
-            if t < 10 * ts:
+        def event(t,y,r,it,tt): 
+            # 10 * ts original
+            if t < 10:
                 return 1
             else:
                 return y[2]

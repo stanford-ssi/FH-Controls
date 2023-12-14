@@ -5,6 +5,7 @@ import Vehicle.rocket
 from Control.controller import PIDController
 import Control.controlConstants
 from scipy.spatial.transform import Rotation
+from Simulator.dynamics import controlled_dynamics
 from Simulator.simulationConstants import GRAVITY as g
 from Simulator.simulationConstants import RHO as rho
 
@@ -124,8 +125,11 @@ class Simulation:
                 self.current_step += 1
             self.previous_time = t
         
-        return self.state_to_stateDot(t, state, rocket)
+        return controlled_dynamics(state, rocket, self.wind, self.timestep, t)
 
+
+#### OLD STUFF BELOW, KEEPING FOR REFERENCE, WILL DELETE EVENTUALLy
+"""
     def state_to_stateDot(self, t, state, rocket):
 
         # Pull Params
@@ -182,3 +186,4 @@ class Simulation:
 
         return statedot
     
+"""

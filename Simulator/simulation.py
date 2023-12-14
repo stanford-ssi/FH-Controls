@@ -5,7 +5,8 @@ import Vehicle.rocket
 from Control.controller import PIDController
 import Control.controlConstants
 from scipy.spatial.transform import Rotation
-from Simulator.dynamics import controlled_dynamics
+from Simulator.dynamics import controlled_dynamics, natural_dyanamics
+from Control.math import compute_Jacobian
 from Simulator.simulationConstants import GRAVITY as g
 from Simulator.simulationConstants import RHO as rho
 
@@ -13,7 +14,9 @@ class Simulation:
     """ Class Representing the Rocket and associated data"""
     def __init__(self, timefinal, simulation_timestep, starting_state, wind, planned_trajectory):
         # Create Engine Object inside Rocket
+        self.state_previous = starting_state
         self.state = starting_state
+        self.statedot_previous = np.zeros((1,len(self.state)))
         self.rocket = Vehicle.rocket.Rocket(simulation_timestep)
         self.timestep = simulation_timestep
         self.timefinal = timefinal
@@ -62,6 +65,7 @@ class Simulation:
         event.terminal=True
         event.direction=-1
         solution = scipy.integrate.solve_ivp(self.wrapper_state_to_stateDot, t, state, args=(self.rocket, self.ideal_trajectory, t_span), t_eval=t_span, max_step=ts/5, events=event)
+        print(self.jacobian_error)
         return solution['y'].T
 
     def display_end_info(self):
@@ -124,8 +128,23 @@ class Simulation:
             if not t == t_vec[-1]:
                 self.current_step += 1
             self.previous_time = t
-        
-        return controlled_dynamics(state, rocket, self.wind, self.timestep, t)
+
+        ## UNDER CONSTRUCTION ##
+        if t == 0:
+            self.jacobian_error = 0
+            self.statedot_previous = natural_dyanamics(state, rocket, self.wind, self.timestep)
+
+        jacobian = compute_Jacobian(state, rocket, self.wind, self.timestep)
+        new_state = self.statedot_previous + np.dot(jacobian.T, (state - self.state_previous).T).T
+        self.statedot_previous = new_state
+
+        #statedot = controlled_dynamics(state, rocket, self.wind, self.timestep, t)
+        statedot = natural_dyanamics(state, rocket, self.wind, self.timestep)
+
+        self.jacobian_error += abs(np.linalg.norm(statedot - new_state))
+        print(self.jacobian_error)
+        self.state_previous = state
+        return statedot
 
 
 #### OLD STUFF BELOW, KEEPING FOR REFERENCE, WILL DELETE EVENTUALLy

@@ -174,7 +174,7 @@ class Simulation:
         torque = np.array([(T * np.sin(gimbal_psi) * np.cos(gimbal_theta) * lever_arm) + wind_moment[0],
                           (T * np.sin(gimbal_psi) * np.sin(gimbal_theta) * lever_arm) + wind_moment[1],
                           0])
-        I_dot = rocket.get_I_previous()
+        I_dot = (rocket.I - rocket.get_I_previous()) / self.timestep
         alphas = np.dot(rocket.I_inv, torque - np.cross(w, np.dot(rocket.I, w)) - np.dot(I_dot, w))
 
         statedot[3:6] = a_global.tolist()

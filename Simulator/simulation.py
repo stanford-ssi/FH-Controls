@@ -2,12 +2,11 @@ import numpy as np
 import scipy.integrate
 import Vehicle.engine
 import Vehicle.rocket
-from Control.controller import PIDController
-import Control.controlConstants
-import control
+from GNC.controller import PIDController
+import GNC.controlConstants
 from scipy.spatial.transform import Rotation
 from Simulator.dynamics import *
-from Control.math import compute_A, compute_B
+from GNC.math import compute_A, compute_B
 from Simulator.simulationConstants import GRAVITY as g
 from Simulator.simulationConstants import RHO as rho
 
@@ -29,11 +28,11 @@ class Simulation:
         self.wind = wind
 
         #PID controller 
-        self.throttle_controller = PIDController(kp=Control.controlConstants.KP_CONSTANT_THROTTLE, ki=Control.controlConstants.KI_CONSTANT_THROTTLE, kd=Control.controlConstants.KD_CONSTANT_THROTTLE)
-        self.pos_x_controller = PIDController(kp=Control.controlConstants.KP_CONSTANT_POS, ki=Control.controlConstants.KI_CONSTANT_POS, kd=Control.controlConstants.KD_CONSTANT_POS)
-        self.pos_y_controller = PIDController(kp=Control.controlConstants.KP_CONSTANT_POS, ki=Control.controlConstants.KI_CONSTANT_POS, kd=Control.controlConstants.KD_CONSTANT_POS)
-        self.theta_y_controller = PIDController(kp=Control.controlConstants.KP_CONSTANT_THETA, ki=Control.controlConstants.KI_CONSTANT_THETA, kd=Control.controlConstants.KD_CONSTANT_THETA)
-        self.theta_x_controller = PIDController(kp=Control.controlConstants.KP_CONSTANT_THETA, ki=Control.controlConstants.KI_CONSTANT_THETA, kd=Control.controlConstants.KD_CONSTANT_THETA)
+        self.throttle_controller = PIDController(kp=GNC.controlConstants.KP_CONSTANT_THROTTLE, ki=GNC.controlConstants.KI_CONSTANT_THROTTLE, kd=GNC.controlConstants.KD_CONSTANT_THROTTLE)
+        self.pos_x_controller = PIDController(kp=GNC.controlConstants.KP_CONSTANT_POS, ki=GNC.controlConstants.KI_CONSTANT_POS, kd=GNC.controlConstants.KD_CONSTANT_POS)
+        self.pos_y_controller = PIDController(kp=GNC.controlConstants.KP_CONSTANT_POS, ki=GNC.controlConstants.KI_CONSTANT_POS, kd=GNC.controlConstants.KD_CONSTANT_POS)
+        self.theta_y_controller = PIDController(kp=GNC.controlConstants.KP_CONSTANT_THETA, ki=GNC.controlConstants.KI_CONSTANT_THETA, kd=GNC.controlConstants.KD_CONSTANT_THETA)
+        self.theta_x_controller = PIDController(kp=GNC.controlConstants.KP_CONSTANT_THETA, ki=GNC.controlConstants.KI_CONSTANT_THETA, kd=GNC.controlConstants.KD_CONSTANT_THETA)
         
     def propogate(self):
         """ Simple propogator

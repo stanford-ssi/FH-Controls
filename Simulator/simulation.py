@@ -4,9 +4,10 @@ import Vehicle.engine
 import Vehicle.rocket
 from Control.controller import PIDController
 import Control.controlConstants
+import control
 from scipy.spatial.transform import Rotation
-from Simulator.dynamics import controlled_dynamics, natural_dyanamics
-from Control.math import compute_Jacobian
+from Simulator.dynamics import *
+from Control.math import compute_A, compute_B
 from Simulator.simulationConstants import GRAVITY as g
 from Simulator.simulationConstants import RHO as rho
 
@@ -134,16 +135,17 @@ class Simulation:
             self.jacobian_error = 0
             self.statedot_previous = natural_dyanamics(state, rocket, self.wind, self.timestep)
 
-        jacobian = compute_Jacobian(state, rocket, self.wind, self.timestep)
-        new_state = self.statedot_previous + np.dot(jacobian.T, (state - self.state_previous).T).T
-        self.statedot_previous = new_state
+        # linearized_x = np.array([0,0,0,0,0,0,0,0,0,0,0,0])
+        # linearized_u = np.array([0.000001, 0.000001, rocket.mass * g])
+        # A = compute_A(linearized_x, rocket, self.wind, self.timestep)
+        # B = compute_B(linearized_u, state, rocket, self.timestep, t)
+        # Q = np.identity(len(state))
+        # R = np.identity(len(linearized_u))
+        # breakpoint()
+        # K = control.lqr(A, B, Q, R)
+        # breakpoint()
 
-        #statedot = controlled_dynamics(state, rocket, self.wind, self.timestep, t)
-        statedot = natural_dyanamics(state, rocket, self.wind, self.timestep)
-
-        self.jacobian_error += abs(np.linalg.norm(statedot - new_state))
-        print(self.jacobian_error)
-        self.state_previous = state
+        statedot = full_dynamics(state, rocket, self.wind, self.timestep, t)
         return statedot
 
 

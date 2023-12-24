@@ -1,197 +1,156 @@
-from abc import abstractmethod, ABC
-from enum import Enum, auto
-from typing import Dict
 
+class HollowCylinder():
+    # Component List Structure: [mass, inner radius, outer_radius, length, bottom_z]
 
+    def __init__(self, mass, inner_radius, outer_radius, length, bottom_z):
+        self.mass = mass
+        self.inner_radius = inner_radius
+        self.outer_radius = outer_radius
+        self.length = length
+        self.bottom_z = bottom_z
 
-class ComponentType(Enum, ABC):
-
-    components = {}
-
-    @abstractmethod
     def moment_of_inertia_xy(self):
-        pass
+        '''
+        Determines moment of Inertia of a Hollow Cylinder about an axis in the X-Y plane going through its center of mass.
+        Format: [mass, inner radius, outer_radius, length, bottom_z]
+        '''
+        return (self.mass / 12) * ((3 * ((self.outer_radius ** 2) + (self.inner_radius ** 2))) + self.length ** 2)
 
-    @abstractmethod
     def moment_of_inertia_z(self):
-        pass
+        '''
+        Determines moment of Inertia of a Hollow Cylinder about Z Axis.
+        Format: [mass, inner radius, outer_radius, length, bottom_z]
+        '''
+        return 0.5 * self.mass * (self.inner_radius ** 2 + self.outer_radius ** 2)
 
-    @abstractmethod    
     def center_of_mass(self):
-        pass
-
-    class HollowCylinder(Enum):
-        #Component List Structure: [mass, inner radius, outer_radius, length, bottom_z]
-        def moment_of_inertia_xy(self):
-            '''
-            Determines moment of Inertia of a Hollow Cylinder about an axis in the X-Y plane going through its center of mass.
-            Format: [mass, inner radius, outer_radius, length, bottom_z]
-            '''
-            hollow_vars = ComponentType.components[ComponentType.HollowCylinder]
-            mass = hollow_vars[0]
-            inner_radius = hollow_vars[1]
-            outer_radius = hollow_vars[2]
-            length = hollow_vars[3]
-            moi_xy = (mass / 12) * ((3 * ((outer_radius ** 2) + (inner_radius ** 2))) + length ** 2)
-
-        def moment_of_inertia_z(self):
-            '''
-            Determines moment of Inertia of a Hollow Cylinder about Z Axis.
-            Format: [mass, inner radius, outer_radius, length, bottom_z]
-            '''
-            hollow_vars = ComponentType.components[ComponentType.HollowCylinder]
-            mass = hollow_vars[0]
-            inner_radius = hollow_vars[1]
-            outer_radius = hollow_vars[2]
-            return 0.5 * mass * (inner_radius ** 2 + outer_radius ** 2)
-        
-        def center_of_mass(self):
-            '''
-            Determines the center of mass of a hollow cylinder.
-            Return value format: [z_coord, mass]
-            '''
-            hollow_vars = ComponentType.components[ComponentType.HollowCylinder]
-            mass = hollow_vars[0]
-            bottom_z = hollow_vars[4]
-            length = hollow_vars[3]
-            z_coord = bottom_z + length / 2
-            return [z_coord, mass]
-
-    class SolidCylinder(Enum):
-        #Component List Structure: [mass, radius, length, bottom_z]
-        def moment_of_inertia_xy(self):
-            '''
-            Determines moment of Inertia of a Hollow Cylinder about an axis in the X-Y plane going through its center of mass.
-            Format: [mass, radius, length, bottom_z]
-            '''
-            solid_vars = ComponentType.components[ComponentType.SolidCylinder]
-            mass = solid_vars[0]
-            radius = solid_vars[1]
-            length = solid_vars[2]
-            moi_xy = (0.25 * mass * (radius ** 2)) + (mass * (length ** 2) / 12)
-            return moi_xy
-
-        def moment_of_inertia_z(self):
-            '''
-            Determines moment of Inertia of a Solid Cylinder/Disk about Z Axis.-
-            Format solid_vars: [mass, radius, length, bottom_z]
-            '''
-            solid_vars = ComponentType.components[ComponentType.SolidCylinder]
-            mass = solid_vars[0]
-            radius = solid_vars[1]
-            return 0.5 * mass * (radius ** 2)
-        
-        def center_of_mass(self):
-            '''
-            Determines the center of mass of a hollow cylinder.
-            Return value format: [z_coord, mass]
-            '''
-            hollow_vars = ComponentType.components[ComponentType.HollowCylinder]
-            mass = hollow_vars[0]
-            bottom_z = hollow_vars[3]
-            length = hollow_vars[2]
-            z_coord = bottom_z + length / 2
-            return [z_coord, mass]
-        
-    class ChangingHollowCylinder(Enum):
-        # Component List Structure: [mass, current_inner_radius, outer_radius, length, bottom_z, original_inner_radius]
-        def moment_of_inertia_xy(self):
-            '''
-            Determines moment of Inertia of a Hollow Cylinder about an axis in the X-Y plane going through its center of mass.
-            Format: [mass, inner radius, outer_radius, length, bottom_z]
-            '''
-            hollow_vars = ComponentType.components[ComponentType.HollowCylinder]
-            mass = hollow_vars[0]
-            inner_radius = hollow_vars[1]
-            outer_radius = hollow_vars[2]
-            length = hollow_vars[3]
-            moi_xy = (mass / 12) * ((3 * ((outer_radius ** 2) + (inner_radius ** 2))) + length ** 2)
-
-        def moment_of_inertia_z(self):
-            '''
-            Determines moment of Inertia of a Hollow Cylinder about Z Axis.
-            Format: [mass, inner radius, outer_radius, length, bottom_z]
-            '''
-            hollow_vars = ComponentType.components[ComponentType.ChangingHollowCylinder]
-            mass = hollow_vars[0]
-            inner_radius = hollow_vars[1]
-            outer_radius = hollow_vars[2]
-            return 0.5 * mass * (inner_radius ** 2 + outer_radius ** 2)
-        
-        def center_of_mass(self):
-            '''
-            Determines the center of mass of a hollow cylinder.
-            Return value format: [z_coord, mass]
-            '''
-            hollow_vars = ComponentType.components[ComponentType.HollowCylinder]
-            mass = hollow_vars[0]
-            bottom_z = hollow_vars[4]
-            length = hollow_vars[3]
-            z_coord = bottom_z + length / 2
-            return [z_coord, mass]
-
-    class ChangingSolidCylinder(Enum):
-        # Component List Structure: [mass, radius, current length, bottom_z, original_length]
-        def moment_of_inertia_xy(self):
-            '''
-            Determines moment of Inertia of a Hollow Cylinder about an axis in the X-Y plane going through its center of mass.
-            Format: [mass, radius, length, bottom_z]
-            '''
-            solid_vars = ComponentType.components[ComponentType.ChangingSolidCylinder]
-            mass = solid_vars[0]
-            radius = solid_vars[1]
-            length = solid_vars[2]
-            moi_xy = (0.25 * mass * (radius ** 2)) + (mass * (length ** 2) / 12)
-            return moi_xy
-
-        def moment_of_inertia_z(self):
-            '''
-            Determines moment of Inertia of a Solid Cylinder/Disk about Z Axis.-
-            Format solid_vars: [mass, radius, length, bottom_z]
-            '''
-            solid_vars = ComponentType.components[ComponentType.ChangingSolidCylinder]
-            mass = solid_vars[0]
-            radius = solid_vars[1]
-            return 0.5 * mass * (radius ** 2)
-        
-        def center_of_mass(self):
-            '''
-            Determines the center of mass of a hollow cylinder.
-            Return value format: [z_coord, mass]
-            '''
-            hollow_vars = ComponentType.components[ComponentType.HollowCylinder]
-            mass = hollow_vars[0]
-            bottom_z = hollow_vars[3]
-            length = hollow_vars[2]
-            z_coord = bottom_z + length / 2
-            return [z_coord, mass]
-
-    class PointMass(Enum):
-        # Component List Structure: [mass, bottom_z]
-        def moment_of_inertia_xy(self):
-            '''
-            Returns component list for point mass.  Returns 0 because the Parallel Axis Theorem will compute the XY MOI in the total_moi_xy() function.
-            '''
-            return 0
-
-        def moment_of_inertia_z(self):
-            '''
-            Assumes point mass is along z-axis.
-            Returns Moment of Inertia of 0
-            '''
-            return 0
-        
-        def center_of_mass(self):
-            '''
-            Return Center of Mass of Point Mass
-            Return value format: [z_coord, mass]
-            '''
-            lst = ComponentType.components[ComponentType.PointMass]
-            return [lst[1], lst[0]]
+        '''
+        Determines the center of mass of a hollow cylinder.
+        Return value format: [z_coord, mass]
+        '''
+        z_coord = self.bottom_z + self.length / 2
+        return [z_coord, self.mass]
 
 
+class SolidCylinder():
+    # Component List Structure: [mass, radius, length, bottom_z]
+    def __init__(self, mass, radius, length, bottom_z):
+        self.mass = mass
+        self.radius = radius
+        self.length = length
+        self.bottom_z = bottom_z
+
+    def moment_of_inertia_xy(self):
+        '''
+        Determines moment of Inertia of a Hollow Cylinder about an axis in the X-Y plane going through its center of mass.
+        Format: [mass, radius, length, bottom_z]
+        '''
+        moi_xy = (0.25 * self.mass * (self.radius ** 2)) + (self.mass * (self.length ** 2) / 12)
+        return moi_xy
+
+    def moment_of_inertia_z(self):
+        '''
+        Determines moment of Inertia of a Solid Cylinder/Disk about Z Axis.-
+        Format solid_vars: [mass, radius, length, bottom_z]'''
+
+        return 0.5 * self.mass * (self.radius ** 2)
+
+    def center_of_mass(self):
+        '''
+        Determines the center of mass of a hollow cylinder.
+        Return value format: [z_coord, mass]
+        '''
+        z_coord = self.bottom_z + self.length / 2
+        return [z_coord, self.mass]
 
 
+class ChangingHollowCylinder():
+    # Component List Structure: [mass, current_inner_radius, outer_radius, length, bottom_z, original_inner_radius]
+    def __init__(self, mass, current_inner_radius, outer_radius, length, bottom_z, original_inner_radius):
+        self.mass = mass
+        self.current_inner_radius = current_inner_radius
+        self.outer_radius = outer_radius
+        self.length = length
+        self.bottom_z = bottom_z
+        self.original_inner_radius = original_inner_radius
+
+    def moment_of_inertia_xy(self):
+        '''
+        Determines moment of Inertia of a Hollow Cylinder about an axis in the X-Y plane going through its center of mass.
+        Format: [mass, inner radius, outer_radius, length, bottom_z]
+        '''
+        return (self.mass / 12) * ((3 * ((self.outer_radius ** 2) + (self.current_inner_radius ** 2))) + self.length ** 2)
+
+    def moment_of_inertia_z(self):
+        '''
+        Determines moment of Inertia of a Hollow Cylinder about Z Axis.
+        Format: [mass, inner radius, outer_radius, length, bottom_z]
+        '''
+        return 0.5 * self.mass * (self.current_inner_radius ** 2 + self.outer_radius ** 2)
+
+    def center_of_mass(self):
+        '''
+        Determines the center of mass of a hollow cylinder.
+        Return value format: [z_coord, mass]
+        '''
+        z_coord = self.bottom_z + self.length / 2
+        return [z_coord, self.mass]
 
 
+class ChangingSolidCylinder():
+    # Component List Structure: [mass, radius, current length, bottom_z, original_length]
+    def __init__(self, mass, radius, current_length, bottom_z, original_length):
+        self.mass = mass
+        self.radius = radius
+        self.current_length = current_length
+        self.bottom_z = bottom_z
+        self.original_length = original_length
 
+    def moment_of_inertia_xy(self):
+        '''
+        Determines moment of Inertia of a Hollow Cylinder about an axis in the X-Y plane going through its center of mass.
+        Format: [mass, radius, length, bottom_z]
+        '''
+        moi_xy = (0.25 * self.mass * (self.radius ** 2)) + (self.mass * (self.current_length ** 2) / 12)
+        return moi_xy
+
+    def moment_of_inertia_z(self):
+        '''
+        Determines moment of Inertia of a Solid Cylinder/Disk about Z Axis.-
+        Format solid_vars: [mass, radius, length, bottom_z]'''
+        return 0.5 * self.mass * (self.radius ** 2)
+
+    def center_of_mass(self):
+        '''
+        Determines the center of mass of a hollow cylinder.
+        Return value format: [z_coord, mass]
+        '''
+        z_coord = self.bottom_z + self.current_length / 2
+        return [z_coord, self.mass]
+
+
+class PointMass():
+    # Component List Structure: [mass, bottom_z]
+    def __init__(self, mass, bottom_z):
+        self.mass = mass
+        self.bottom_z = bottom_z
+
+    def moment_of_inertia_xy(self):
+        '''
+        Returns component list for point mass.  Returns 0 because the Parallel Axis Theorem will compute the XY MOI in the total_moi_xy() function.
+        '''
+        return 0
+
+    def moment_of_inertia_z(self):
+        '''
+        Assumes point mass is along z-axis.
+        Returns Moment of Inertia of 0
+        '''
+        return 0
+
+    def center_of_mass(self):
+        '''
+        Return Center of Mass of Point Mass
+        Return value format: [z_coord, mass]
+        '''
+        return [self.bottom_z, self.mass]

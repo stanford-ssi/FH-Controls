@@ -1,6 +1,7 @@
 import numpy as np
 import Vehicle.engine
 import Vehicle.rocketConstants
+from Vehicle.components import *
 from scipy.integrate import cumtrapz
 from scipy.interpolate import interp1d
 
@@ -14,19 +15,63 @@ class Rocket:
         self.mass = self.mass_noEngine + self.engine.full_mass #Rocket Starts Fully Fueled
         self.massHistory = np.empty(shape=(0))
         
+        # Pull Components List
+        self.components = self.build_rocket(Vehicle.rocketConstants.COMPONENTS)
+
         # Cg and Cp locations, measured from top of rocket
-        self.com = 0.75
+        self.com = self.calculate_com()
         self.cop = Vehicle.rocketConstants.Cp
 
-        self.I_prev = np.array([[1, 0, 0],
-                           [0, 1, 0],
-                           [0, 0, 5]])
+        # Calculate Moment of Inertia Tensor
         self.I = np.array([[1, 0, 0],
                            [0, 1, 0],
                            [0, 0, 5]])
-        self.I_inv = np.linalg.inv(self.I)
-
+        self.I_prev = self.I
+        
+        # Define Tip Angle
         self.tip_angle = Vehicle.rocketConstants.ROCKET_MAX_TIP
+    
+    def build_rocket(self, components):
+        ''' Take in list of parts from rocket constants and build rocket'''
+        new_components = []
+        mass_check = 0
+        for component in components:
+            if component['type'] == 'HollowCylinder':
+                new_component = HollowCylinder(component['mass'], component['inner_radius'], component['outer_radius'], component['length'], component['bottom_z'])
+                mass_check += component['mass']
+            if component['type'] == 'SolidCylinder':
+                new_component = SolidCylinder(component['mass'], component['radius'], component['length'], component['bottom_z'])
+                mass_check += component['mass']
+            if component['type'] == 'ChangingHollowCylinder':
+                new_component = ChangingHollowCylinder(component['start_mass'], component['start_inner_radius'], component['outer_radius'], component['length'], component['bottom_z'], component['start_inner_radius'])
+                mass_check += component['start_mass']
+            if component['type'] == 'ChangingSolidCylinder':
+                new_component = ChangingSolidCylinder(component['start_mass'], component['radius'], component['start_length'], component['bottom_z'], component['start_length'])
+                mass_check += component['start_mass']
+            if component['type'] == 'PointMass':
+                new_component = PointMass(component['mass'], component['bottom_z'])
+                mass_check += component['mass']
+            new_components.append(new_component)
+        if not mass_check == self.mass:
+            print('Rocket Mass: %d' %self.mass)
+            print('Sum of Components Mass: %d' %mass_check)
+            raise ValueError('Rocket Component Masses do not sum to total rocket mass! Check rocketConstants File!!')
+        return new_components
+            
+    def calculate_com(self):
+        """
+        Determines the center of mass of the system (entire rocket)
+        Iterates through [Z-Coordinate of center of mass, mass] for each component of the rocket.
+        Returns the Z-Coordinate of the center of mass of the rocket, given Z = 0 is the bottom of the rocket.
+        """
+        total_mass_times_distance = 0
+        total_mass = 0
+        for component in self.components:
+            individual_com = component.center_of_mass() #2-element list, [Z-Coordinate of center of mass, mass]
+            total_mass_times_distance += individual_com[0] * individual_com[1] #numerator
+            total_mass += individual_com[1] #add mass to total mass, denominator
+        rocket_center_of_mass = total_mass_times_distance / total_mass #calculate overall center-of-mass
+        return rocket_center_of_mass       
         
     def update_mass(self, dt):
         """ Outputs the expected mass based on it

@@ -29,22 +29,6 @@ def total_moi_z():
 
     return tot_moi_z
 
-def calculate_com():
-    """
-    Determines the center of mass of the system (entire rocket)
-    Iterates through [Z-Coordinate of center of mass, mass] for each component of the rocket.
-    Returns the Z-Coordinate of the center of mass of the rocket, given Z = 0 is the bottom of the rocket.
-    """
-    total_mass_x_distance = 0
-    total_mass = 0
-    for component, values in ComponentType.components.items():
-        component: ComponentType = component
-        individual_com = component.center_of_mass() #2-element list, [Z-Coordinate of center of mass, mass]
-        total_mass_x_distance += individual_com[0] * individual_com[1] #numerator
-        total_mass += individual_com[1] #add mass to total mass, denominator
-    rocket_center_of_mass = total_mass_x_distance / total_mass #calculate overall center-of-mass
-    return rocket_center_of_mass   
-
 def fuel_proportion_remaining(rocket):
     """
     Given the integration of the throttle curve from t-initial to t-current,

@@ -9,11 +9,13 @@ from PathPlanner.plan import PlannedTrajectory
 # Rotation order yaw, pitch, roll
 state_0 = np.array([0.1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) # Start State [X, Y, Z, VX, VY, VZ, THX, THY, THZ, OMX, OMY, OMZ]
 wind = np.array([1, 1, 0.001])
-tf = 10
+tf = 20
 ts = 0.1
 
 # Setup Simulation
-planned_trajectory = PlannedTrajectory(50, tf, [0, 0, 0], ts).trajectory
+planned_trajectory = PlannedTrajectory(50, tf).plot_trajectory()
+planned_trajectory = PlannedTrajectory(50, tf).trajectory
+
 sim = Simulation(tf, ts, state_0, wind, planned_trajectory)
 
 # Run Simulation

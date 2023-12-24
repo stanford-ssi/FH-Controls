@@ -48,7 +48,6 @@ def calculate_com():
     return rocket_center_of_mass   
 
 
-
 def fuel_proportion_remaining():
     """
     Given the integration of the throttle curve from t-initial to t-current,

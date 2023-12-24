@@ -18,7 +18,6 @@ def total_moi_xy():
 
     return tot_moi_xy
 
-
 def total_moi_z():
     """
     Calculates the total moment of inertia about the center of mass in the Z Plane, about the central axis of the rocket. 
@@ -29,7 +28,6 @@ def total_moi_z():
         tot_moi_z += component.moment_of_inertia_z()
 
     return tot_moi_z
-
 
 def calculate_com():
     """
@@ -47,15 +45,13 @@ def calculate_com():
     rocket_center_of_mass = total_mass_x_distance / total_mass #calculate overall center-of-mass
     return rocket_center_of_mass   
 
-
-def fuel_proportion_remaining():
+def fuel_proportion_remaining(rocket):
     """
     Given the integration of the throttle curve from t-initial to t-current,
     and the integration of the thrust curve from t-initial to t-final,
     returns the percent of fuel remaining.
     """
-    return 1 - (np.sum(Engine.throttle_history) / np.sum(Engine.thrust_curve)) #Ask Luke?
-
+    return 1 - (rocket.engine.full_mass - rocket.engine.mass) / (rocket.engine.full_mass - rocket.engine.drymass)
 
 def update_lengthwise_fuel(fuel_prop_remaining):
     """
@@ -103,7 +99,7 @@ if __name__ == '__main__':
     #For a given timestep:
     # STEPS (Updating MOI During Flight
     # 1. Calculate fuel proportion remaining
-    current_fuel_remaining = fuel_proportion_remaining()
+    current_fuel_remaining = fuel_proportion_remaining(rocket)
     # 2. Change fuel-component variables (using update)
     update_lengthwise_fuel(current_fuel_remaining)
     update_radial_fuel(current_fuel_remaining)

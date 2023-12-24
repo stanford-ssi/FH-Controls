@@ -57,8 +57,6 @@ class ComponentType(Enum, ABC):
             z_coord = bottom_z + length / 2
             return [z_coord, mass]
 
-
-
     class SolidCylinder(Enum):
         #Component List Structure: [mass, radius, length, bottom_z]
         def moment_of_inertia_xy(self):
@@ -95,8 +93,6 @@ class ComponentType(Enum, ABC):
             z_coord = bottom_z + length / 2
             return [z_coord, mass]
         
-            
-
     class ChangingHollowCylinder(Enum):
         # Component List Structure: [mass, current_inner_radius, outer_radius, length, bottom_z, original_inner_radius]
         def moment_of_inertia_xy(self):

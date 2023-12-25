@@ -122,8 +122,7 @@ class Simulation:
             rocket.engine.save_posX(pos_x)
             rocket.engine.save_posY(pos_y)
             rocket.engine.save_thrust(rocket.engine.get_thrust(t, throttle))
-            rocket.update_mass(dt)
-            rocket.update_I()
+            rocket.update_rocket()
 
             if not t == t_vec[-1]:
                 self.current_step += 1

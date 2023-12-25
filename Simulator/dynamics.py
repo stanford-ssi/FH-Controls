@@ -41,8 +41,8 @@ def natural_dyanamics(state, rocket, wind, dt):
     torque = np.array([wind_moment[0],
                        wind_moment[1],
                         0])
-    I_dot = (rocket.I - rocket.get_I_previous()) / dt
-    alphas = np.dot(rocket.I_inv, torque - np.cross(w, np.dot(rocket.I, w)) - np.dot(I_dot, w))
+    I_dot = (rocket.I - rocket.I_prev) / dt
+    alphas = np.dot(np.linalg.inv(rocket.I), torque - np.cross(w, np.dot(rocket.I, w)) - np.dot(I_dot, w))
 
     statedot[3:6] = a_global.tolist()
     statedot[9:12] = alphas.tolist()
@@ -89,7 +89,7 @@ def controlled_dynamics(state, rocket, dt, t, posX, posY, T):
                         (T * np.sin(gimbal_psi) * np.sin(gimbal_theta) * lever_arm),
                         0])
     I_dot = (rocket.I - rocket.get_I_previous()) / dt
-    alphas = np.dot(rocket.I_inv, torque - np.cross(w, np.dot(rocket.I, w)) - np.dot(I_dot, w))
+    alphas = np.dot(np.linalg.inv(rocket.I), torque - np.cross(w, np.dot(rocket.I, w)) - np.dot(I_dot, w))
 
     statedot[3:6] = a_global.tolist()
     statedot[9:12] = alphas.tolist()
@@ -144,8 +144,8 @@ def full_dynamics(state, rocket, wind, dt, t):
     torque = np.array([(T * np.sin(gimbal_psi) * np.cos(gimbal_theta) * lever_arm) + wind_moment[0],
                         (T * np.sin(gimbal_psi) * np.sin(gimbal_theta) * lever_arm) + wind_moment[1],
                         0])
-    I_dot = (rocket.I - rocket.get_I_previous()) / dt
-    alphas = np.dot(rocket.I_inv, torque - np.cross(w, np.dot(rocket.I, w)) - np.dot(I_dot, w))
+    I_dot = (rocket.I - rocket.I_prev) / dt
+    alphas = np.dot(np.linalg.inv(rocket.I), torque - np.cross(w, np.dot(rocket.I, w)) - np.dot(I_dot, w))
 
     statedot[3:6] = a_global.tolist()
     statedot[9:12] = alphas.tolist()

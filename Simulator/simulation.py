@@ -2,9 +2,11 @@ import numpy as np
 import scipy.integrate
 import Vehicle.engine
 import Vehicle.rocket
-from Control.controller import PIDController
-import Control.controlConstants
+from GNC.controller import PIDController
+import GNC.controlConstants
 from scipy.spatial.transform import Rotation
+from Simulator.dynamics import *
+from GNC.math import compute_A, compute_B
 from Simulator.simulationConstants import GRAVITY as g
 from Simulator.simulationConstants import RHO as rho
 
@@ -12,7 +14,9 @@ class Simulation:
     """ Class Representing the Rocket and associated data"""
     def __init__(self, timefinal, simulation_timestep, starting_state, wind, planned_trajectory):
         # Create Engine Object inside Rocket
+        self.state_previous = starting_state
         self.state = starting_state
+        self.statedot_previous = np.zeros((1,len(self.state)))
         self.rocket = Vehicle.rocket.Rocket(simulation_timestep)
         self.timestep = simulation_timestep
         self.timefinal = timefinal
@@ -24,11 +28,11 @@ class Simulation:
         self.wind = wind
 
         #PID controller 
-        self.throttle_controller = PIDController(kp=Control.controlConstants.KP_CONSTANT_THROTTLE, ki=Control.controlConstants.KI_CONSTANT_THROTTLE, kd=Control.controlConstants.KD_CONSTANT_THROTTLE)
-        self.pos_x_controller = PIDController(kp=Control.controlConstants.KP_CONSTANT_POS, ki=Control.controlConstants.KI_CONSTANT_POS, kd=Control.controlConstants.KD_CONSTANT_POS)
-        self.pos_y_controller = PIDController(kp=Control.controlConstants.KP_CONSTANT_POS, ki=Control.controlConstants.KI_CONSTANT_POS, kd=Control.controlConstants.KD_CONSTANT_POS)
-        self.theta_y_controller = PIDController(kp=Control.controlConstants.KP_CONSTANT_THETA, ki=Control.controlConstants.KI_CONSTANT_THETA, kd=Control.controlConstants.KD_CONSTANT_THETA)
-        self.theta_x_controller = PIDController(kp=Control.controlConstants.KP_CONSTANT_THETA, ki=Control.controlConstants.KI_CONSTANT_THETA, kd=Control.controlConstants.KD_CONSTANT_THETA)
+        self.throttle_controller = PIDController(kp=GNC.controlConstants.KP_CONSTANT_THROTTLE, ki=GNC.controlConstants.KI_CONSTANT_THROTTLE, kd=GNC.controlConstants.KD_CONSTANT_THROTTLE)
+        self.pos_x_controller = PIDController(kp=GNC.controlConstants.KP_CONSTANT_POS, ki=GNC.controlConstants.KI_CONSTANT_POS, kd=GNC.controlConstants.KD_CONSTANT_POS)
+        self.pos_y_controller = PIDController(kp=GNC.controlConstants.KP_CONSTANT_POS, ki=GNC.controlConstants.KI_CONSTANT_POS, kd=GNC.controlConstants.KD_CONSTANT_POS)
+        self.theta_y_controller = PIDController(kp=GNC.controlConstants.KP_CONSTANT_THETA, ki=GNC.controlConstants.KI_CONSTANT_THETA, kd=GNC.controlConstants.KD_CONSTANT_THETA)
+        self.theta_x_controller = PIDController(kp=GNC.controlConstants.KP_CONSTANT_THETA, ki=GNC.controlConstants.KI_CONSTANT_THETA, kd=GNC.controlConstants.KD_CONSTANT_THETA)
         
     def propogate(self):
         """ Simple propogator
@@ -61,6 +65,7 @@ class Simulation:
         event.terminal=True
         event.direction=-1
         solution = scipy.integrate.solve_ivp(self.wrapper_state_to_stateDot, t, state, args=(self.rocket, self.ideal_trajectory, t_span), t_eval=t_span, max_step=ts/5, events=event)
+        print(self.jacobian_error)
         return solution['y'].T
 
     def display_end_info(self):
@@ -117,68 +122,26 @@ class Simulation:
             rocket.engine.save_posX(pos_x)
             rocket.engine.save_posY(pos_y)
             rocket.engine.save_thrust(rocket.engine.get_thrust(t, throttle))
-            rocket.update_mass(dt)
-            rocket.update_I()
+            rocket.update_rocket()
 
             if not t == t_vec[-1]:
                 self.current_step += 1
             self.previous_time = t
-        
-        return self.state_to_stateDot(t, state, rocket)
 
-    def state_to_stateDot(self, t, state, rocket):
+        ## UNDER CONSTRUCTION ##
+        if t == 0:
+            self.jacobian_error = 0
+            self.statedot_previous = natural_dyanamics(state, rocket, self.wind, self.timestep)
 
-        # Pull Params
-        throttle = rocket.engine.throttle
-        T = rocket.engine.get_thrust(t, throttle)
-        m = rocket.mass
-        lever_arm = rocket.com
-        engine_length = rocket.engine.length
-        posX = rocket.engine.posx
-        posY = rocket.engine.posy
-        v = state[3:6]
-        w = state[9:12]
+        # linearized_x = np.array([0,0,0,0,0,0,0,0,0,0,0,0])
+        # linearized_u = np.array([0.000001, 0.000001, rocket.mass * g])
+        # A = compute_A(linearized_x, rocket, self.wind, self.timestep)
+        # B = compute_B(linearized_u, state, rocket, self.timestep, t)
+        # Q = np.identity(len(state))
+        # R = np.identity(len(linearized_u))
+        # breakpoint()
+        # K = control.lqr(A, B, Q, R)
+        # breakpoint()
 
-        # Convert Actuator Positions to Cyclindrical Coords
-        gimbal_R = np.sqrt((posX ** 2) + (posY ** 2))
-        gimbal_theta = np.arctan2(posY, posX)
-        gimbal_psi = np.arctan2(gimbal_R, engine_length)
-
-        # Build Statedot
-        statedot = np.zeros(len(state))
-        statedot[0:3] = v
-        statedot[6:9] = w
-        
-        # Rocket rotations
-        pitch = state[6] # Angle from rocket from pointing up towards positive x axis
-        yaw = state[7] # Angle from rocket from pointing up towards positive y axis
-        roll = state[8] # Roll, ccw when looking down on rocket
-        R = Rotation.from_euler('xyz', [yaw, -pitch, -roll]).as_matrix()
-        R_inv = np.linalg.inv(R)
-
-        # Wind rotation into rocket frame
-        wind_rf = np.dot(R, self.wind + v)
-        wind_force = rocket.find_wind_force(wind_rf, rho)
-        wind_moment = rocket.find_wind_moment(wind_rf, rho)
-
-        # Calculate Accelerations in rocket frame
-        aX_rf = (T * np.sin(gimbal_psi) * np.cos(gimbal_theta) / m) + (-1 * g * R[0][2]) + (wind_force[0] / m)
-        aY_rf = (T * np.sin(gimbal_psi) * np.sin(gimbal_theta) / m) + (-1 * g * R[1][2]) + (wind_force[1] / m)
-        aZ_rf = (T * np.cos(gimbal_psi) / m) + (-1 * g * R[2][2]) + (wind_force[2] / m)
-        a_rf = np.array([aX_rf, aY_rf, aZ_rf])
-
-        # Convert Accelerations from rocket frame to global frame
-        a_global = np.dot(R_inv, a_rf)
-
-        # Calculate Alphas
-        torque = np.array([(T * np.sin(gimbal_psi) * np.cos(gimbal_theta) * lever_arm) + wind_moment[0],
-                          (T * np.sin(gimbal_psi) * np.sin(gimbal_theta) * lever_arm) + wind_moment[1],
-                          0])
-        I_dot = (rocket.I - rocket.get_I_previous()) / self.timestep
-        alphas = np.dot(rocket.I_inv, torque - np.cross(w, np.dot(rocket.I, w)) - np.dot(I_dot, w))
-
-        statedot[3:6] = a_global.tolist()
-        statedot[9:12] = alphas.tolist()
-
+        statedot = full_dynamics(state, rocket, self.wind, self.timestep, t)
         return statedot
-    

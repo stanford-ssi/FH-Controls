@@ -27,6 +27,8 @@ class Rocket:
 
         # Calculate Moment of Inertia Tensor
         self.I_history = []
+        self.update_rocket()
+        self.I_history = []
 
         # Define Tip Angle
         self.tip_angle = Vehicle.rocketConstants.ROCKET_MAX_TIP

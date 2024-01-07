@@ -7,9 +7,9 @@ from PathPlanner.plan import PlannedTrajectory
 # State is all relative to global frame except Z rotation which is rocket frame
 # Pitch is defined as angle from upward z axis towards pos x axis, yaw is angle from upward z towards pos y, and roll is ccw looking down on rocket
 # Rotation order yaw, pitch, roll
-state_0 = np.array([0.1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) # Start State [X, Y, Z, VX, VY, VZ, THX, THY, THZ, OMX, OMY, OMZ]
+state_0 = np.array([0.1, 0, 50, 0, 0, 0, 0, 0, 0, 0, 0, 0]) # Start State [X, Y, Z, VX, VY, VZ, THX, THY, THZ, OMX, OMY, OMZ]
 wind = np.array([1, 1, 0.001])
-tf = 20
+tf = 10
 ts = 0.1
 
 # Setup Simulation
@@ -21,7 +21,7 @@ sim = Simulation(tf, ts, state_0, wind, planned_trajectory)
 # Run Simulation
 trajectory = sim.propogate()
 sim.display_end_info()
-
+breakpoint()
 # Pull Info for Graphs
 position_error = [sim.position_error_history[:,0], sim.position_error_history[:,1], sim.position_error_history[:,2]]
 error_names = ["X Error", "Y Error", "Z Error"]

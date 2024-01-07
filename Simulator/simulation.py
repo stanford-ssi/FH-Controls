@@ -2,6 +2,7 @@ import numpy as np
 import scipy.integrate
 import Vehicle.engine
 import Vehicle.rocket
+import control
 from GNC.controller import PIDController
 import GNC.controlConstants
 from scipy.spatial.transform import Rotation
@@ -127,21 +128,37 @@ class Simulation:
             if not t == t_vec[-1]:
                 self.current_step += 1
             self.previous_time = t
-
-        ## UNDER CONSTRUCTION ##
+            
+            
+            linearized_x = np.array([0,0,0,0,0,0,0,0,0,0,0,0])
+            linearized_u = np.array([0, 0, rocket.mass * g])
+            A_orig = compute_A(linearized_x, rocket, self.wind, self.timestep)
+            B_orig = compute_B(linearized_u, state, rocket, self.timestep, t)
+            
+            # Remove Roll Columns and Rows
+            A = np.delete(A_orig, 11, 0)
+            A = np.delete(A, 11, 1)
+            A = np.delete(A, 8, 0)
+            A = np.delete(A, 8, 1)
+            B = np.delete(B_orig, 11, 0)
+            B = np.delete(B, 8, 0)
+            
+            Q = np.identity(len(state) - 2)
+            R = np.identity(len(linearized_u))
+            K,S,E = control.lqr(A, B, Q, R)
+            K = np.insert(K, 8, 0, axis=1)
+            K = np.insert(K, 11, 0, axis=1)
+            U = np.dot(-K, state)
+            
+            statedot = natural_dyanamics(state, rocket, self.wind, self.timestep) + np.dot(B_orig, U)
+            print("here")
+        else:
+            statedot = self.statedot_previous
+        
         if t == 0:
             self.jacobian_error = 0
             self.statedot_previous = natural_dyanamics(state, rocket, self.wind, self.timestep)
 
-        # linearized_x = np.array([0,0,0,0,0,0,0,0,0,0,0,0])
-        # linearized_u = np.array([0.000001, 0.000001, rocket.mass * g])
-        # A = compute_A(linearized_x, rocket, self.wind, self.timestep)
-        # B = compute_B(linearized_u, state, rocket, self.timestep, t)
-        # Q = np.identity(len(state))
-        # R = np.identity(len(linearized_u))
-        # breakpoint()
-        # K = control.lqr(A, B, Q, R)
-        # breakpoint()
-
-        statedot = full_dynamics(state, rocket, self.wind, self.timestep, t)
+        
+        #statedot = full_dynamics(state, rocket, self.wind, self.timestep, t)
         return statedot

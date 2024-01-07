@@ -1,6 +1,6 @@
 import numpy as np
 from copy import deepcopy, copy
-from Simulator.dynamics import natural_dyanamics, controlled_dynamics
+from Simulator.dynamics import natural_dyanamics, controlled_dynamics, controlled_dynamics_2
 
 def compute_A(state, rocket, wind, dt):
     """ Compute Jacobian for State dot wrt State"""
@@ -25,8 +25,8 @@ def compute_B(linearized_u, state, rocket, dt, t):
         u_minus = deepcopy(linearized_u).astype(float)
         u_plus[i] = linearized_u[i] + h
         u_minus[i] = linearized_u[i] - h
-        statedot_plus = controlled_dynamics(state, rocket, dt, t, u_plus[0], u_plus[1], u_plus[2])
-        statedot_minus = controlled_dynamics(state, rocket, dt, t, u_minus[0], u_minus[1], u_minus[2])
+        statedot_plus = controlled_dynamics_2(state, rocket, dt, t, u_plus[0], u_plus[1], u_plus[2])
+        statedot_minus = controlled_dynamics_2(state, rocket, dt, t, u_minus[0], u_minus[1], u_minus[2])
         jacobian[i] = (statedot_plus - statedot_minus) / (2 * h)
     return jacobian.T
 

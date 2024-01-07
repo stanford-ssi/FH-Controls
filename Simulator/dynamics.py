@@ -49,6 +49,47 @@ def natural_dyanamics(state, rocket, wind, dt):
 
     return statedot
 
+def controlled_dynamics_2(state, rocket, dt, t, acc_x, acc_y, acc_z):
+    """ Rocket dynamics with control"""
+    # Pull Params
+    m = rocket.mass
+    lever_arm = rocket.com
+    engine_length = rocket.engine.length
+    v = state[3:6]
+    w = state[9:12]
+
+    # Build Statedot
+    statedot = np.zeros(len(state))
+    statedot[0:3] = v
+    statedot[6:9] = w
+    
+    # Rocket rotations
+    pitch = state[6] # Angle from rocket from pointing up towards positive x axis
+    yaw = state[7] # Angle from rocket from pointing up towards positive y axis
+    roll = state[8] # Roll, ccw when looking down on rocket
+    R = Rotation.from_euler('xyz', [yaw, -pitch, -roll]).as_matrix()
+    R_inv = np.linalg.inv(R)
+
+    # Calculate Accelerations in rocket frame
+    a_rf = np.array([acc_x, acc_y, acc_z])
+
+    # Convert Accelerations from rocket frame to global frame
+    a_global = np.dot(R_inv, a_rf)
+
+    # Calculate Alphas
+    torque = np.array([(acc_x * m * lever_arm),
+                        (acc_y * m * lever_arm),
+                        0])
+    I_dot = (rocket.I - rocket.I_prev) / dt
+    alphas = np.dot(np.linalg.inv(rocket.I), torque - np.cross(w, np.dot(rocket.I, w)) - np.dot(I_dot, w))
+
+    statedot[3:6] = a_global.tolist()
+    statedot[9:12] = alphas.tolist()
+
+    return statedot
+
+
+
 def controlled_dynamics(state, rocket, dt, t, posX, posY, T):
     """ Rocket dynamics with control"""
     # Pull Params
@@ -88,7 +129,7 @@ def controlled_dynamics(state, rocket, dt, t, posX, posY, T):
     torque = np.array([(T * np.sin(gimbal_psi) * np.cos(gimbal_theta) * lever_arm),
                         (T * np.sin(gimbal_psi) * np.sin(gimbal_theta) * lever_arm),
                         0])
-    I_dot = (rocket.I - rocket.get_I_previous()) / dt
+    I_dot = (rocket.I - rocket.I_prev) / dt
     alphas = np.dot(np.linalg.inv(rocket.I), torque - np.cross(w, np.dot(rocket.I, w)) - np.dot(I_dot, w))
 
     statedot[3:6] = a_global.tolist()

@@ -111,7 +111,7 @@ class Simulation:
             K,S,E = control.lqr(A, B, Q, R)
             K = np.insert(K, 8, 0, axis=1)
             K = np.insert(K, 11, 0, axis=1)
-            U = np.dot(-K, -state_error) # U is the 
+            U = np.dot(-K, -state_error) # U is the desired accelerations
             
             # Save error to error history
             if not t == 0:
@@ -132,8 +132,8 @@ class Simulation:
             
             # Check if railed
             throttle = throttle_checks(throttle)
-            pos_x = pos_checks(pos_x)
-            pos_y = pos_checks(pos_y)
+            # pos_x = pos_checks(pos_x)
+            # pos_y = pos_checks(pos_y)
 
             # Log Current States
             rocket.engine.save_throttle(throttle)

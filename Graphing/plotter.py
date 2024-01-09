@@ -138,3 +138,19 @@ def plot_variable_vs_time(var, ts, tf, name='INSERT NAME HERE'):
     ax.set_ylabel(name)
 
     plt.show()
+    
+def plot_variables_vs_time(vars, ts, tf, name='INSERT NAME HERE'):
+
+    fig, ax = plt.subplots()
+
+    t = np.linspace(0, tf, int(tf/ts)+1)
+
+    for var in vars:
+        ax.plot(t[0:len(var)], var)
+
+
+    ax.set_title("%s vs Time"%name)
+    ax.set_xlabel("Time")
+    ax.set_ylabel(name)
+
+    plt.show()

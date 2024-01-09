@@ -52,7 +52,7 @@ class Simulation:
 
         # Propogate given ODE, stop when rocket crashes as indicated by this here event function
         def event(t,y,r,it,tt):
-            if t < 10 * ts:
+            if t < 100 * ts:
                 return 1
             else:
                 return y[2]
@@ -83,22 +83,21 @@ class Simulation:
         if (t == 0) or (t >= t_vec[self.current_step] and self.previous_time < t_vec[self.current_step]):
 
             # Calculate Errors
-            ideal_position_state = ideal_trajectory[self.current_step]
-            ideal_rotational_state = [0, 0, 0]
-            position_error = ideal_position_state - state[0:3]
-            rotational_error = ideal_rotational_state - state[6:9]
-            state_error = np.array([position_error[0], position_error[1], position_error[2], 0, 0, 0, rotational_error[0], rotational_error[1], rotational_error[2], 0, 0, 0])
-            dt = t_vec[1] - t_vec[0]
+            ideal_position_state = np.concatenate((ideal_trajectory[self.current_step], np.array([0,0,0])), axis=0)
+            ideal_rotational_state = [0, 0, 0, 0, 0, 0]
+            position_error = ideal_position_state - state[0:6]
+            rotational_error = ideal_rotational_state - state[6:12]
+            state_error = np.concatenate((position_error, rotational_error), axis=0)
 
             if t == 0:
-                self.position_error_history = position_error.reshape((1, 3))
-                self.rotation_error_history = rotational_error.reshape((1, 3))
+                self.position_error_history = position_error.reshape((1, 6))
+                self.rotation_error_history = rotational_error.reshape((1, 6))
 
             # State Space Control
             linearized_x = np.array([0,0,0,0,0,0,0,0,0,0,0,0])
             linearized_u = np.array([0, 0, g])
             A_orig = compute_A(linearized_x, rocket, self.wind, self.timestep)
-            B_orig = compute_B(linearized_u, state_error, rocket, self.timestep, t)
+            B_orig = compute_B(linearized_u, linearized_x, rocket, self.timestep, t)
             
             # Remove Roll Columns and Rows
             A = np.delete(A_orig, 11, 0)
@@ -112,12 +111,12 @@ class Simulation:
             K,S,E = control.lqr(A, B, Q, R)
             K = np.insert(K, 8, 0, axis=1)
             K = np.insert(K, 11, 0, axis=1)
-            U = np.dot(-K, state) # U is the 
+            U = np.dot(-K, -state_error) # U is the 
             
             # Save error to error history
             if not t == 0:
-                self.position_error_history = np.append(self.position_error_history, position_error.reshape((1, 3)), axis=0)
-                self.rotation_error_history = np.append(self.rotation_error_history, rotational_error.reshape((1, 3)), axis=0)
+                self.position_error_history = np.append(self.position_error_history, position_error.reshape((1, 6)), axis=0)
+                self.rotation_error_history = np.append(self.rotation_error_history, rotational_error.reshape((1, 6)), axis=0)
 
             # Convert desired accelerations to throttle and gimbal angles
             gimbal_theta = np.arctan2(U[1], U[0])
@@ -132,9 +131,9 @@ class Simulation:
             throttle = rocket.engine.get_throttle(t, T)
             
             # Check if railed
-            # throttle = throttle_checks(throttle)
-            # pos_x = pos_checks(pos_x)
-            # pos_y = pos_checks(pos_y)
+            throttle = throttle_checks(throttle)
+            pos_x = pos_checks(pos_x)
+            pos_y = pos_checks(pos_y)
 
             # Log Current States
             rocket.engine.save_throttle(throttle)

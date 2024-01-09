@@ -117,8 +117,8 @@ def controlled_dynamics(state, rocket, dt, t, posX, posY, T):
     R_inv = np.linalg.inv(R)
 
     # Calculate Accelerations in rocket frame
-    aX_rf = (T * np.sin(gimbal_psi) * np.cos(gimbal_theta) / m)
-    aY_rf = (T * np.sin(gimbal_psi) * np.sin(gimbal_theta) / m)
+    aX_rf = (T * np.sin(gimbal_psi) * -np.cos(gimbal_theta) / m)
+    aY_rf = (T * np.sin(gimbal_psi) * -np.sin(gimbal_theta) / m)
     aZ_rf = (T * np.cos(gimbal_psi) / m)
     a_rf = np.array([aX_rf, aY_rf, aZ_rf])
 
@@ -126,8 +126,8 @@ def controlled_dynamics(state, rocket, dt, t, posX, posY, T):
     a_global = np.dot(R_inv, a_rf)
 
     # Calculate Alphas
-    torque = np.array([(T * np.sin(gimbal_psi) * np.cos(gimbal_theta) * lever_arm),
-                        (T * np.sin(gimbal_psi) * np.sin(gimbal_theta) * lever_arm),
+    torque = np.array([(T * np.sin(gimbal_psi) * -np.cos(gimbal_theta) * lever_arm),
+                        (T * np.sin(gimbal_psi) * -np.sin(gimbal_theta) * lever_arm),
                         0])
     I_dot = (rocket.I - rocket.I_prev) / dt
     alphas = np.dot(np.linalg.inv(rocket.I), torque - np.cross(w, np.dot(rocket.I, w)) - np.dot(I_dot, w))
@@ -173,8 +173,8 @@ def full_dynamics(state, rocket, wind, dt, t):
     wind_moment = rocket.find_wind_moment(wind_rf, rho)
 
     # Calculate Accelerations in rocket frame
-    aX_rf = (T * np.sin(gimbal_psi) * np.cos(gimbal_theta) / m) + (-1 * g * R[0][2]) + (wind_force[0] / m)
-    aY_rf = (T * np.sin(gimbal_psi) * np.sin(gimbal_theta) / m) + (-1 * g * R[1][2]) + (wind_force[1] / m)
+    aX_rf = (T * np.sin(gimbal_psi) * -np.cos(gimbal_theta) / m) + (-1 * g * R[0][2]) + (wind_force[0] / m)
+    aY_rf = (T * np.sin(gimbal_psi) * -np.sin(gimbal_theta) / m) + (-1 * g * R[1][2]) + (wind_force[1] / m)
     aZ_rf = (T * np.cos(gimbal_psi) / m) + (-1 * g * R[2][2]) + (wind_force[2] / m)
     a_rf = np.array([aX_rf, aY_rf, aZ_rf])
 
@@ -182,8 +182,8 @@ def full_dynamics(state, rocket, wind, dt, t):
     a_global = np.dot(R_inv, a_rf)
 
     # Calculate Alphas
-    torque = np.array([(T * np.sin(gimbal_psi) * np.cos(gimbal_theta) * lever_arm) + wind_moment[0],
-                        (T * np.sin(gimbal_psi) * np.sin(gimbal_theta) * lever_arm) + wind_moment[1],
+    torque = np.array([(T * np.sin(gimbal_psi) * -np.cos(gimbal_theta) * lever_arm) + wind_moment[0],
+                        (T * np.sin(gimbal_psi) * -np.sin(gimbal_theta) * lever_arm) + wind_moment[1],
                         0])
     I_dot = (rocket.I - rocket.I_prev) / dt
     alphas = np.dot(np.linalg.inv(rocket.I), torque - np.cross(w, np.dot(rocket.I, w)) - np.dot(I_dot, w))

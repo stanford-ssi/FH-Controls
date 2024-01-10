@@ -9,7 +9,7 @@ from PathPlanner.plan import PlannedTrajectory
 # Rotation order yaw, pitch, roll
 state_0 = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) # Start State [X, Y, Z, VX, VY, VZ, THX, THY, THZ, OMX, OMY, OMZ]
 wind = np.array([1, 1, 0.001])
-tf = 15
+tf = 25
 ts = 0.1
 max_altitude = 50
 
@@ -37,12 +37,12 @@ dynamics_plot_names = ["X Position", "Y Position", "Z Position", "X Velocity", "
 rotational_dynamics_plot_names = ["Pitch", "Yaw", "Roll", "Pitch Rate", "Yaw Rate", "Roll Rate", "Pitch Acceleration", "Yaw Acceleration", "Roll Acceleration"]
 
 # Graphs
-PlannedTrajectory(max_altitude, tf, ts).plot_trajectory()
-Graphing.plotter.animate_3DOF_trajectory(trajectory, planned_trajectory)
+#PlannedTrajectory(max_altitude, tf, ts).plot_trajectory()
+#Graphing.plotter.animate_3DOF_trajectory(trajectory, planned_trajectory)
 #Graphing.plotter.plot_3(position_error, ts, tf, error_names)
 #Graphing.plotter.plot_3(rotation_error, ts, tf, rot_error_names)
 #Graphing.plotter.plot_3(controls, ts, tf, control_names)
-Graphing.plotter.plot_variables_vs_time([position_error[0], position_error[1], position_error[2], controls[0], controls[1], controls[2]], ts, tf)
+Graphing.plotter.plot_variables_vs_time([planned_trajectory[:,2], trajectory[:,2], controls[2] * 10], ts, tf, name="Altitude")
 #Graphing.plotter.plot_3(moi, ts, tf, moi_names)
 Graphing.plotter.plot_dynamics(dynamics[0:9], ts, tf, names=dynamics_plot_names)
 Graphing.plotter.plot_dynamics(dynamics[9:18], ts, tf, names=rotational_dynamics_plot_names)

@@ -50,7 +50,7 @@ class Simulation:
 
         # Propogate given ODE, stop when rocket crashes as indicated by this here event function
         def event(t,y,r,it,tt):
-            if t < 100 * ts:
+            if t < 1000 * ts:
                 return 1
             else:
                 return y[2]

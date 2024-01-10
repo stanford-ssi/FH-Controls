@@ -21,7 +21,10 @@ def state_space_control(state_error, rocket, wind, ts):
             
     # Q and R
     Q = np.identity(len(state_error) - 2)
+    Q[2][2] = 1000 #Penalize Z Error
+    Q[5][5] = 100 #Penalize Z velocity Error
     R = np.identity(len(linearized_u))
+    R[2][2] = 0.6
             
     # Control
     K,S,E = control.lqr(A, B, Q, R)

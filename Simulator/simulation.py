@@ -96,8 +96,8 @@ class Simulation:
             # State Space Control
             linearized_x = np.array([0,0,0,0,0,0,0,0,0,0,0,0])
             linearized_u = np.array([0, 0, g])
-            A_orig = compute_A(linearized_x, rocket, self.wind, self.timestep)
-            B_orig = compute_B(linearized_u, linearized_x, rocket, self.timestep, t)
+            A_orig = compute_A(linearized_x, linearized_u, rocket, self.wind, self.timestep)
+            B_orig = compute_B(linearized_x, linearized_u, rocket, self.timestep)
             
             # Remove Roll Columns and Rows
             A = np.delete(A_orig, 11, 0)
@@ -111,7 +111,7 @@ class Simulation:
             K,S,E = control.lqr(A, B, Q, R)
             K = np.insert(K, 8, 0, axis=1)
             K = np.insert(K, 11, 0, axis=1)
-            U = np.dot(-K, -state_error) # U is the desired accelerations
+            U = np.dot(-K, state_error) + linearized_u # U is the desired accelerations
             
             # Save error to error history
             if not t == 0:

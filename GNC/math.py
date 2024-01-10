@@ -1,8 +1,22 @@
 import numpy as np
 from copy import deepcopy, copy
-from Simulator.dynamics import natural_dyanamics, controlled_dynamics, controlled_dynamics_2
+from Simulator.dynamics import natural_dyanamics, controlled_dynamics, full_dynamics, full_dynamics_controller
 
-def compute_A(state, rocket, wind, dt):
+# def compute_A(state, rocket, wind, dt):
+#     """ Compute Jacobian for State dot wrt State"""
+#     h = 0.001
+#     jacobian = np.zeros((len(state), len(state)))
+#     for i in range(len(state)):
+#         state_plus = deepcopy(state).astype(float)
+#         state_minus = deepcopy(state).astype(float)
+#         state_plus[i] = state_plus[i] + h
+#         state_minus[i] = state_minus[i] - h
+#         statedot_plus = natural_dyanamics(state_plus, rocket, wind, dt)
+#         statedot_minus = natural_dyanamics(state_minus, rocket, wind, dt)
+#         jacobian[i] = (statedot_plus - statedot_minus) / (2 * h)
+#     return jacobian.T
+
+def compute_A(state, u, rocket, wind, dt):
     """ Compute Jacobian for State dot wrt State"""
     h = 0.001
     jacobian = np.zeros((len(state), len(state)))
@@ -11,12 +25,12 @@ def compute_A(state, rocket, wind, dt):
         state_minus = deepcopy(state).astype(float)
         state_plus[i] = state_plus[i] + h
         state_minus[i] = state_minus[i] - h
-        statedot_plus = natural_dyanamics(state_plus, rocket, wind, dt)
-        statedot_minus = natural_dyanamics(state_minus, rocket, wind, dt)
+        statedot_plus = full_dynamics_controller(state_plus, rocket, wind, dt, u[0], u[1], u[2])
+        statedot_minus = full_dynamics_controller(state_minus, rocket, wind, dt, u[0], u[1], u[2])
         jacobian[i] = (statedot_plus - statedot_minus) / (2 * h)
     return jacobian.T
 
-def compute_B(linearized_u, state, rocket, dt, t):
+def compute_B(state, linearized_u, rocket, dt):
     """ Compute Jacobian for State dot wrt State"""
     h = 0.001
     jacobian = np.zeros((len(linearized_u), len(state)))
@@ -25,8 +39,8 @@ def compute_B(linearized_u, state, rocket, dt, t):
         u_minus = deepcopy(linearized_u).astype(float)
         u_plus[i] = linearized_u[i] + h
         u_minus[i] = linearized_u[i] - h
-        statedot_plus = controlled_dynamics_2(state, rocket, dt, t, u_plus[0], u_plus[1], u_plus[2])
-        statedot_minus = controlled_dynamics_2(state, rocket, dt, t, u_minus[0], u_minus[1], u_minus[2])
+        statedot_plus = controlled_dynamics(state, rocket, dt, u_plus[0], u_plus[1], u_plus[2])
+        statedot_minus = controlled_dynamics(state, rocket, dt, u_minus[0], u_minus[1], u_minus[2])
         jacobian[i] = (statedot_plus - statedot_minus) / (2 * h)
     return jacobian.T
 

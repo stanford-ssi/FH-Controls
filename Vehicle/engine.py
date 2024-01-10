@@ -52,6 +52,32 @@ class Engine:
 
         return(Thrust)
     
+    def get_throttle(self, t, thrust):
+        """ Takes in a query time and a thrust and outputs the throttle based on the thrust curve
+        
+        Inputs:
+            t = requested time for query (with t=0 being engine startup)
+            thrust = requested thrust
+            
+        Returns:
+            throttle = throttle given conditions above
+            
+        """
+
+        # Calculate "Real" Postition on thrust curve, based off of throttle history
+        t_adj = (np.sum(self.throttle_history) / len(self.throttle_history)) * (len(self.throttle_history)*self.timestep)
+        if len(self.throttle_history) == 0:
+            t_adj = 0
+
+        # Calculate Thrust at given time
+        maxThrust = self.thrust_curve[int(t_adj/self.dt_thrust_curve)]
+        self.thrust = maxThrust
+
+        # Apply Throttling
+        throttle = thrust / maxThrust
+
+        return(throttle)
+    
     def save_throttle(self, throttle):
         """ Takes in the current Throttle and saves it into the throttle history"""
         self.throttle_history = np.append(self.throttle_history, throttle)

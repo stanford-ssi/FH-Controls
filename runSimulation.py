@@ -7,14 +7,14 @@ from PathPlanner.plan import PlannedTrajectory
 # State is all relative to global frame except Z rotation which is rocket frame
 # Pitch is defined as angle from upward z axis towards pos x axis, yaw is angle from upward z towards pos y, and roll is ccw looking down on rocket
 # Rotation order yaw, pitch, roll
-state_0 = np.array([0.1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) # Start State [X, Y, Z, VX, VY, VZ, THX, THY, THZ, OMX, OMY, OMZ]
+state_0 = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) # Start State [X, Y, Z, VX, VY, VZ, THX, THY, THZ, OMX, OMY, OMZ]
 wind = np.array([1, 1, 0.001])
-tf = 20
+tf = 15
 ts = 0.1
+max_altitude = 50
 
 # Setup Simulation
-planned_trajectory = PlannedTrajectory(50, tf).plot_trajectory()
-planned_trajectory = PlannedTrajectory(50, tf).trajectory
+planned_trajectory = PlannedTrajectory(max_altitude, tf, ts).trajectory
 
 sim = Simulation(tf, ts, state_0, wind, planned_trajectory)
 
@@ -37,10 +37,12 @@ dynamics_plot_names = ["X Position", "Y Position", "Z Position", "X Velocity", "
 rotational_dynamics_plot_names = ["Pitch", "Yaw", "Roll", "Pitch Rate", "Yaw Rate", "Roll Rate", "Pitch Acceleration", "Yaw Acceleration", "Roll Acceleration"]
 
 # Graphs
+PlannedTrajectory(max_altitude, tf, ts).plot_trajectory()
 Graphing.plotter.animate_3DOF_trajectory(trajectory, planned_trajectory)
-Graphing.plotter.plot_3(position_error, ts, tf, error_names)
-Graphing.plotter.plot_3(rotation_error, ts, tf, rot_error_names)
-Graphing.plotter.plot_3(controls, ts, tf, control_names)
-Graphing.plotter.plot_3(moi, ts, tf, moi_names)
+#Graphing.plotter.plot_3(position_error, ts, tf, error_names)
+#Graphing.plotter.plot_3(rotation_error, ts, tf, rot_error_names)
+#Graphing.plotter.plot_3(controls, ts, tf, control_names)
+Graphing.plotter.plot_variables_vs_time([position_error[0], position_error[1], position_error[2], controls[0], controls[1], controls[2]], ts, tf)
+#Graphing.plotter.plot_3(moi, ts, tf, moi_names)
 Graphing.plotter.plot_dynamics(dynamics[0:9], ts, tf, names=dynamics_plot_names)
 Graphing.plotter.plot_dynamics(dynamics[9:18], ts, tf, names=rotational_dynamics_plot_names)

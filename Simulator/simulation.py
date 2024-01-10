@@ -2,11 +2,10 @@ import numpy as np
 import scipy.integrate
 import Vehicle.engine
 import Vehicle.rocket
-from GNC.controller import PIDController
-import GNC.controlConstants
+from GNC.constraints import *
+from GNC.controller import *
 from scipy.spatial.transform import Rotation
 from Simulator.dynamics import *
-from GNC.math import compute_A, compute_B
 from Simulator.simulationConstants import GRAVITY as g
 from Simulator.simulationConstants import RHO as rho
 
@@ -27,13 +26,6 @@ class Simulation:
         self.rotation_error_history = np.array([[0,0,0]]) 
         self.wind = wind
 
-        #PID controller 
-        self.throttle_controller = PIDController(kp=GNC.controlConstants.KP_CONSTANT_THROTTLE, ki=GNC.controlConstants.KI_CONSTANT_THROTTLE, kd=GNC.controlConstants.KD_CONSTANT_THROTTLE)
-        self.pos_x_controller = PIDController(kp=GNC.controlConstants.KP_CONSTANT_POS, ki=GNC.controlConstants.KI_CONSTANT_POS, kd=GNC.controlConstants.KD_CONSTANT_POS)
-        self.pos_y_controller = PIDController(kp=GNC.controlConstants.KP_CONSTANT_POS, ki=GNC.controlConstants.KI_CONSTANT_POS, kd=GNC.controlConstants.KD_CONSTANT_POS)
-        self.theta_y_controller = PIDController(kp=GNC.controlConstants.KP_CONSTANT_THETA, ki=GNC.controlConstants.KI_CONSTANT_THETA, kd=GNC.controlConstants.KD_CONSTANT_THETA)
-        self.theta_x_controller = PIDController(kp=GNC.controlConstants.KP_CONSTANT_THETA, ki=GNC.controlConstants.KI_CONSTANT_THETA, kd=GNC.controlConstants.KD_CONSTANT_THETA)
-        
     def propogate(self):
         """ Simple propogator
 
@@ -58,7 +50,7 @@ class Simulation:
 
         # Propogate given ODE, stop when rocket crashes as indicated by this here event function
         def event(t,y,r,it,tt):
-            if t < 10 * ts:
+            if t < 100 * ts:
                 return 1
             else:
                 return y[2]
@@ -89,33 +81,36 @@ class Simulation:
         if (t == 0) or (t >= t_vec[self.current_step] and self.previous_time < t_vec[self.current_step]):
 
             # Calculate Errors
-            ideal_position_state = ideal_trajectory[self.current_step]
-            ideal_rotational_state = [0, 0, 0]
-            position_error = ideal_position_state - state[0:3]
-            rotational_error = ideal_rotational_state - state[6:9]
-            dt = t_vec[1] - t_vec[0]
+            position_error = ideal_trajectory[self.current_step] - state[0:6]
+            rotational_error = [0, 0, 0, 0, 0, 0] - state[6:12]
+            state_error = np.concatenate((position_error, rotational_error), axis=0)
 
             if t == 0:
-                self.position_error_history = position_error.reshape((1, 3))
-                self.rotation_error_history = rotational_error.reshape((1, 3))
-
-            # Find Actuator Valuess
-            # STEVE BRUNTON VIDEOS, generalized pid control with jacobian
-            throttle = self.throttle_controller.control(position_error[2], self.position_error_history[-1][2], dt, 'throttle')
-            # Check if we have angular velocity. Correct to verticle if so. Else, adjust position
-            if (abs(state[6]) > self.rocket.tip_angle): 
-                pos_x = self.theta_x_controller.control(rotational_error[0], self.rotation_error_history[-1][0], dt, 'posx')
+                self.position_error_history = position_error.reshape((1, 6))
+                self.rotation_error_history = rotational_error.reshape((1, 6))
             else:
-                pos_x = self.pos_x_controller.control(position_error[0], self.position_error_history[-1][0], dt, 'posx')
-            if (abs(state[7]) > self.rocket.tip_angle):
-                pos_y = self.theta_y_controller.control(rotational_error[1], self.rotation_error_history[-1][1], dt, 'posy')
-            else:
-                pos_y = self.pos_y_controller.control(position_error[1], self.position_error_history[-1][1], dt, 'posy')
+                self.position_error_history = np.append(self.position_error_history, position_error.reshape((1, 6)), axis=0)
+                self.rotation_error_history = np.append(self.rotation_error_history, rotational_error.reshape((1, 6)), axis=0)
 
-            # Save error to error history
-            if not t == 0:
-                self.position_error_history = np.append(self.position_error_history, position_error.reshape((1, 3)), axis=0)
-                self.rotation_error_history = np.append(self.rotation_error_history, rotational_error.reshape((1, 3)), axis=0)
+            # Call Controller
+            U = state_space_control(state_error, rocket, self.wind, self.timestep)
+            
+            # Convert desired accelerations to throttle and gimbal angles
+            gimbal_theta = np.arctan2(U[1], U[0])
+            gimbal_psi = np.arctan2(U[0], U[2] * np.cos(gimbal_theta))
+            T = U[2] * rocket.mass / np.cos(gimbal_psi)
+            gimbal_r = np.tan(gimbal_psi) * rocket.engine.length
+            if gimbal_theta > 0:
+                pos_x = np.sqrt((gimbal_r ** 2) / (1 + (np.tan(gimbal_theta) ** 2)))
+            else:
+                pos_x = -1 * np.sqrt((gimbal_r ** 2) / (1 + (np.tan(gimbal_theta) ** 2)))
+            pos_y = pos_x * np.tan(gimbal_theta)
+            throttle = rocket.engine.get_throttle(t, T)
+            
+            # Check if railed
+            throttle = throttle_checks(throttle)
+            pos_x = pos_checks(pos_x)
+            pos_y = pos_checks(pos_y)
 
             # Log Current States
             rocket.engine.save_throttle(throttle)
@@ -127,21 +122,10 @@ class Simulation:
             if not t == t_vec[-1]:
                 self.current_step += 1
             self.previous_time = t
-
-        ## UNDER CONSTRUCTION ##
+        
         if t == 0:
             self.jacobian_error = 0
-            self.statedot_previous = natural_dyanamics(state, rocket, self.wind, self.timestep)
-
-        # linearized_x = np.array([0,0,0,0,0,0,0,0,0,0,0,0])
-        # linearized_u = np.array([0.000001, 0.000001, rocket.mass * g])
-        # A = compute_A(linearized_x, rocket, self.wind, self.timestep)
-        # B = compute_B(linearized_u, state, rocket, self.timestep, t)
-        # Q = np.identity(len(state))
-        # R = np.identity(len(linearized_u))
-        # breakpoint()
-        # K = control.lqr(A, B, Q, R)
-        # breakpoint()
-
+            self.statedot_previous = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        
         statedot = full_dynamics(state, rocket, self.wind, self.timestep, t)
         return statedot

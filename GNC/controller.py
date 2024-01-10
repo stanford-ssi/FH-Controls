@@ -1,51 +1,61 @@
-""" 
-Will Add Further Documentation Here (Need To Agree On Formatting)
+import numpy as np
+import control
+from copy import deepcopy
+from Simulator.dynamics import dynamics_for_state_space_control
+from Simulator.simulationConstants import GRAVITY as g
 
-
-"""
-
-class PIDController:
-    def __init__(self, kp, ki, kd):
-        self.kp = kp
-        self.ki = ki
-        self.kd = kd
-        self.integral = 0
-
-    #self-note for concern: if there are any errors with this code, it's like with the z_error and error portions, since z_error = error[2] and I'm unsure if this is all correct. 
+def state_space_control(state_error, rocket, wind, ts):
+    # State Space Control
+    linearized_x = np.array([0,0,0,0,0,0,0,0,0,0,0,0])
+    linearized_u = np.array([0, 0, g])
+    A_orig = compute_A(linearized_x, linearized_u, rocket, wind, ts)
+    B_orig = compute_B(linearized_x, linearized_u, rocket, wind, ts)
+            
+    # Remove Roll Columns and Rows
+    A = np.delete(A_orig, 11, 0)
+    A = np.delete(A, 11, 1)
+    A = np.delete(A, 8, 0)
+    A = np.delete(A, 8, 1)
+    B = np.delete(B_orig, 11, 0)
+    B = np.delete(B, 8, 0)
+            
+    # Q and R
+    Q = np.identity(len(state_error) - 2)
+    R = np.identity(len(linearized_u))
+            
+    # Control
+    K,S,E = control.lqr(A, B, Q, R)
+    K = np.insert(K, 8, 0, axis=1)
+    K = np.insert(K, 11, 0, axis=1)
+    U = np.dot(-K, state_error) + linearized_u # U is the desired accelerations
     
-    def control(self, error, prev_error, dt, type):
-        # P term
-        p_term = self.kp * error
-        
-        # I term
-        self.integral += error * dt
-        i_term = self.ki * self.integral
-        
-        # D term
-        derivative = (error - prev_error) / dt
-        d_term = self.kd * derivative
+    return U
 
-        # Update throttle and previous error
-        new = p_term + i_term + d_term
-        if type == 'throttle':
-            new = self.throttle_checks(new)
-        if type == 'posx' or type == 'posy':
-            new = self.pos_checks(new)
+def compute_A(state, u, rocket, wind, dt):
+    """ Compute Jacobian for State dot wrt State"""
+    h = 0.001
+    jacobian = np.zeros((len(state), len(state)))
+    for i in range(len(state)):
+        state_plus = deepcopy(state).astype(float)
+        state_minus = deepcopy(state).astype(float)
+        state_plus[i] = state_plus[i] + h
+        state_minus[i] = state_minus[i] - h
+        statedot_plus = dynamics_for_state_space_control(state_plus, rocket, wind, dt, u[0], u[1], u[2])
+        statedot_minus = dynamics_for_state_space_control(state_minus, rocket, wind, dt, u[0], u[1], u[2])
+        jacobian[i] = (statedot_plus - statedot_minus) / (2 * h)
+    return jacobian.T
 
-        return new
-
-    def throttle_checks(self, throttle):
-        if throttle < 0:
-            return 0.1
-        if throttle > 1:
-            return 1.0
-        return throttle
-    
-    def pos_checks(self, pos):
-        if pos < -0.2: #m
-            return pos
-        if pos > 0.2:
-            return pos
-        return pos
-    
+def compute_B(state, linearized_u, rocket, wind, dt):
+    """ Compute Jacobian for State dot wrt State"""
+    h = 0.001
+    jacobian = np.zeros((len(linearized_u), len(state)))
+    for i in range(len(linearized_u)):
+        u_plus = deepcopy(linearized_u).astype(float)
+        u_minus = deepcopy(linearized_u).astype(float)
+        u_plus[i] = linearized_u[i] + h
+        u_minus[i] = linearized_u[i] - h
+        statedot_plus = dynamics_for_state_space_control(state, rocket, wind, dt, u_plus[0], u_plus[1], u_plus[2])
+        statedot_minus = dynamics_for_state_space_control(state, rocket, wind, dt, u_minus[0], u_minus[1], u_minus[2])
+        jacobian[i] = (statedot_plus - statedot_minus) / (2 * h)
+    return jacobian.T
 

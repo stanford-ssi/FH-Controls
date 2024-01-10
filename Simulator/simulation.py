@@ -2,12 +2,10 @@ import numpy as np
 import scipy.integrate
 import Vehicle.engine
 import Vehicle.rocket
-import control
 from GNC.constraints import *
-import GNC.controlConstants
+from GNC.controller import *
 from scipy.spatial.transform import Rotation
 from Simulator.dynamics import *
-from GNC.math import compute_A, compute_B
 from Simulator.simulationConstants import GRAVITY as g
 from Simulator.simulationConstants import RHO as rho
 
@@ -83,41 +81,20 @@ class Simulation:
         if (t == 0) or (t >= t_vec[self.current_step] and self.previous_time < t_vec[self.current_step]):
 
             # Calculate Errors
-            ideal_position_state = np.concatenate((ideal_trajectory[self.current_step], np.array([0,0,0])), axis=0)
-            ideal_rotational_state = [0, 0, 0, 0, 0, 0]
-            position_error = ideal_position_state - state[0:6]
-            rotational_error = ideal_rotational_state - state[6:12]
+            position_error = ideal_trajectory[self.current_step] - state[0:6]
+            rotational_error = [0, 0, 0, 0, 0, 0] - state[6:12]
             state_error = np.concatenate((position_error, rotational_error), axis=0)
 
             if t == 0:
                 self.position_error_history = position_error.reshape((1, 6))
                 self.rotation_error_history = rotational_error.reshape((1, 6))
-
-            # State Space Control
-            linearized_x = np.array([0,0,0,0,0,0,0,0,0,0,0,0])
-            linearized_u = np.array([0, 0, g])
-            A_orig = compute_A(linearized_x, linearized_u, rocket, self.wind, self.timestep)
-            B_orig = compute_B(linearized_x, linearized_u, rocket, self.timestep)
-            
-            # Remove Roll Columns and Rows
-            A = np.delete(A_orig, 11, 0)
-            A = np.delete(A, 11, 1)
-            A = np.delete(A, 8, 0)
-            A = np.delete(A, 8, 1)
-            B = np.delete(B_orig, 11, 0)
-            B = np.delete(B, 8, 0)
-            Q = np.identity(len(state) - 2)
-            R = np.identity(len(linearized_u))
-            K,S,E = control.lqr(A, B, Q, R)
-            K = np.insert(K, 8, 0, axis=1)
-            K = np.insert(K, 11, 0, axis=1)
-            U = np.dot(-K, state_error) + linearized_u # U is the desired accelerations
-            
-            # Save error to error history
-            if not t == 0:
+            else:
                 self.position_error_history = np.append(self.position_error_history, position_error.reshape((1, 6)), axis=0)
                 self.rotation_error_history = np.append(self.rotation_error_history, rotational_error.reshape((1, 6)), axis=0)
 
+            # Call Controller
+            U = state_space_control(state_error, rocket, self.wind, self.timestep)
+            
             # Convert desired accelerations to throttle and gimbal angles
             gimbal_theta = np.arctan2(U[1], U[0])
             gimbal_psi = np.arctan2(U[0], U[2] * np.cos(gimbal_theta))
@@ -132,8 +109,8 @@ class Simulation:
             
             # Check if railed
             throttle = throttle_checks(throttle)
-            # pos_x = pos_checks(pos_x)
-            # pos_y = pos_checks(pos_y)
+            pos_x = pos_checks(pos_x)
+            pos_y = pos_checks(pos_y)
 
             # Log Current States
             rocket.engine.save_throttle(throttle)
@@ -148,7 +125,7 @@ class Simulation:
         
         if t == 0:
             self.jacobian_error = 0
-            self.statedot_previous = natural_dyanamics(state, rocket, self.wind, self.timestep)
+            self.statedot_previous = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
         
         statedot = full_dynamics(state, rocket, self.wind, self.timestep, t)
         return statedot

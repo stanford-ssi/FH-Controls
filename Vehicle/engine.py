@@ -10,7 +10,7 @@ class Engine:
         self.timestep = simulation_timestep
         self.burn_duration = Vehicle.engineConstants.ENGINE_BURN_DURATION
         self.exhaust_velocity = Vehicle.engineConstants.EXHAUST_VELOCITY
-        self.thrust_curve = np.linspace(2500, 2500, num=int(self.burn_duration/self.dt_thrust_curve)) #Eventually this will be data in constants file
+        self.thrust_curve = np.linspace(Vehicle.engineConstants.THRUST_CURVE_VALUE, Vehicle.engineConstants.THRUST_CURVE_VALUE, num=int(self.burn_duration/self.dt_thrust_curve)) #Eventually this will be data in constants file
         self.thrust_history = np.empty(shape=(0)) # The thrust curve we will fill up for integration (Just keep it this way it's easier than trying to reshape the origional thrust curve every time)
         self.thrust = self.thrust_curve[0]
 
@@ -41,10 +41,16 @@ class Engine:
         """
 
         # Calculate "Real" Postition on thrust curve, based off of throttle history
-        t_adj = (np.sum(self.throttle_history) / len(self.throttle_history)) * (len(self.throttle_history)*self.timestep)
-
+        if len(self.throttle_history) == 0:
+            t_adj = 0
+        else:
+            t_adj = np.sum(self.throttle_history) * self.timestep
+            
         # Calculate Thrust at given time
-        maxThrust = self.thrust_curve[int(t_adj/self.dt_thrust_curve)]
+        if t_adj >= self.burn_duration:
+            maxThrust = 0
+        else:
+            maxThrust = self.thrust_curve[int(t_adj/self.dt_thrust_curve)]
         self.thrust = maxThrust
 
         # Apply Throttling
@@ -65,12 +71,16 @@ class Engine:
         """
 
         # Calculate "Real" Postition on thrust curve, based off of throttle history
-        t_adj = (np.sum(self.throttle_history) / len(self.throttle_history)) * (len(self.throttle_history)*self.timestep)
         if len(self.throttle_history) == 0:
             t_adj = 0
+        else:
+            t_adj = np.sum(self.throttle_history) * self.timestep
 
         # Calculate Thrust at given time
-        maxThrust = self.thrust_curve[int(t_adj/self.dt_thrust_curve)]
+        if t_adj >= self.burn_duration:
+            maxThrust = 0
+        else:
+            maxThrust = self.thrust_curve[int(t_adj/self.dt_thrust_curve)]
         self.thrust = maxThrust
 
         # Apply Throttling

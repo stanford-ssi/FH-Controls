@@ -8,8 +8,8 @@ from PathPlanner.plan import PlannedTrajectory
 # Pitch is defined as angle from upward z axis towards pos x axis, yaw is angle from upward z towards pos y, and roll is ccw looking down on rocket
 # Rotation order yaw, pitch, roll
 state_0 = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) # Start State [X, Y, Z, VX, VY, VZ, THX, THY, THZ, OMX, OMY, OMZ]
-wind = np.array([1, 1, 0.001])
-tf = 25
+wind = np.array([1, 5, 0.001])
+tf = 20
 ts = 0.1
 max_altitude = 50
 
@@ -38,7 +38,7 @@ rotational_dynamics_plot_names = ["Pitch", "Yaw", "Roll", "Pitch Rate", "Yaw Rat
 
 # Graphs
 #PlannedTrajectory(max_altitude, tf, ts).plot_trajectory()
-#Graphing.plotter.animate_3DOF_trajectory(trajectory, planned_trajectory)
+Graphing.plotter.animate_3DOF_trajectory(trajectory, planned_trajectory)
 #Graphing.plotter.plot_3(position_error, ts, tf, error_names)
 #Graphing.plotter.plot_3(rotation_error, ts, tf, rot_error_names)
 #Graphing.plotter.plot_3(controls, ts, tf, control_names)

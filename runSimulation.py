@@ -1,6 +1,5 @@
 import numpy as np
 from Simulator.simulation import Simulation
-import Graphing.plotter
 from Graphing.GUI import *
 from PathPlanner.plan import PlannedTrajectory
 
@@ -23,22 +22,5 @@ sim = Simulation(tf, ts, state_0, wind, planned_trajectory)
 trajectory = sim.propogate()
 sim.display_end_info()
 
-# Pull Info for Graphs
-
-
-
-
-
-
-
 # Graphs
-create_gui(sim, trajectory, ts, tf)
-#PlannedTrajectory(max_altitude, tf, ts).plot_trajectory()
-#Graphing.plotter.animate_3DOF_trajectory(trajectory, planned_trajectory)
-#Graphing.plotter.plot_3(position_error, ts, tf, error_names)
-#Graphing.plotter.plot_3(rotation_error, ts, tf, rot_error_names)
-#Graphing.plotter.plot_3(controls, ts, tf, control_names)
-#Graphing.plotter.plot_variables_vs_time([planned_trajectory[:,2], trajectory[:,2], controls[2] * 10], ts, tf, name="Altitude")
-#Graphing.plotter.plot_3(moi, ts, tf, moi_names)
-#Graphing.plotter.plot_dynamics(dynamics[0:9], ts, tf, names=dynamics_plot_names)
-#Graphing.plotter.plot_dynamics(dynamics[9:18], ts, tf, names=rotational_dynamics_plot_names)
+create_gui(sim, planned_trajectory, trajectory, ts, tf)

@@ -62,6 +62,25 @@ def plot_variable_vs_time_on_subplot(var, ts, tf, ax, name='INSERT NAME HERE'):
     ax.set_xlabel("Time")
     ax.set_ylabel(name)
 
+def plot_variables_vs_time(tab, vars, ts, tf, name='INSERT NAME HERE'):
+
+    fig, ax = plt.subplots()
+
+    t = np.linspace(0, tf, int(tf/ts)+1)
+
+    for var in vars:
+        ax.plot(t[0:len(var)], var)
+
+
+    ax.set_title("%s vs Time"%name)
+    ax.set_xlabel("Time")
+    ax.set_ylabel(name)
+
+    # Embed Matplotlib figure in Tkinter window
+    canvas = FigureCanvasTkAgg(fig, master=tab)
+    canvas.draw()
+    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+    
 def create_3_graph(tab, var, ts, tf, names, title):
     nrows, ncols = 1, 3
     fig, axs = plt.subplots(nrows, ncols)
@@ -89,7 +108,7 @@ def create_graph(tab, title, data):
     canvas.draw()
     canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
-def create_gui(sim, trajectory, ts, tf):
+def create_gui(sim, planned_trajectory, trajectory, ts, tf):
     root = tk.Tk()
     root.title("Simulation Data")
 
@@ -97,6 +116,11 @@ def create_gui(sim, trajectory, ts, tf):
     style.configure("TNotebook.Tab", font=('Helvetica', 20))  # Adjust font size here
 
     notebook = ttk.Notebook(root)
+
+    # Altitude vs Time
+    tab0 = ttk.Frame(notebook)
+    plot_variables_vs_time(tab0, [planned_trajectory[:,2], trajectory[:,2], sim.rocket.engine.throttle_history * 10], ts, tf, name="Altitude")
+    notebook.add(tab0, text="| ALTITUDE |")
 
     # Position Error
     position_error = [sim.position_error_history[:,0], sim.position_error_history[:,1], sim.position_error_history[:,2]]

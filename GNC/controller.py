@@ -3,6 +3,7 @@ import control
 from copy import deepcopy
 from Simulator.dynamics import dynamics_for_state_space_control
 from Simulator.simulationConstants import GRAVITY as g
+from GNC.controlConstants import *
 
 def state_space_control(state_error, rocket, wind, ts):
     # State Space Control
@@ -21,10 +22,10 @@ def state_space_control(state_error, rocket, wind, ts):
             
     # Q and R
     Q = np.identity(len(state_error) - 2)
-    Q[2][2] = 1000 #Penalize Z Error
-    Q[5][5] = 100 #Penalize Z velocity Error
     R = np.identity(len(linearized_u))
-    R[2][2] = 0.6
+    Q[2][2] = Q_Z_POS #Penalize Z Error
+    Q[5][5] = Q_Z_VEL #Penalize Z velocity Error
+    R[2][2] = R_THROTTLE #Penalize Throttle movement
             
     # Control
     K,S,E = control.lqr(A, B, Q, R)

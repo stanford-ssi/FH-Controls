@@ -6,6 +6,7 @@ from GNC.constraints import *
 from GNC.controller import *
 from scipy.spatial.transform import Rotation
 from Simulator.dynamics import *
+from Simulator.wind import *
 from Simulator.simulationConstants import GRAVITY as g
 from Simulator.simulationConstants import RHO as rho
 
@@ -24,7 +25,9 @@ class Simulation:
         self.ideal_trajectory = planned_trajectory
         self.position_error_history = np.array([[0,0,0]]) 
         self.rotation_error_history = np.array([[0,0,0]]) 
-        self.wind = wind
+        self.wind_history = np.array([[0,0,0]]) 
+        self.base_wind = wind
+        self.current_wind = wind
 
     def propogate(self):
         """ Simple propogator
@@ -92,8 +95,15 @@ class Simulation:
                 self.position_error_history = np.append(self.position_error_history, position_error.reshape((1, 6)), axis=0)
                 self.rotation_error_history = np.append(self.rotation_error_history, rotational_error.reshape((1, 6)), axis=0)
 
+            # Determine wind at this moment in time
+            #self.current_wind = get_wind(self.base_wind, self.current_wind)
+            if t == 0:
+                self.wind_history = np.array([self.current_wind])
+            else:
+                self.wind_history = np.append(self.wind_history, [self.current_wind], axis=0)
+
             # Call Controller
-            U = state_space_control(state_error, rocket, self.wind, self.timestep)
+            U = state_space_control(state_error, rocket, self.current_wind, self.timestep)
             
             # Convert desired accelerations to throttle and gimbal angles
             gimbal_theta = np.arctan2(U[1], U[0])
@@ -108,9 +118,10 @@ class Simulation:
             throttle = rocket.engine.get_throttle(t, T)
             
             # Check if railed
-            throttle = throttle_checks(throttle)
-            pos_x = pos_checks(pos_x)
-            pos_y = pos_checks(pos_y)
+            if not t == 0:
+                throttle = throttle_checks(throttle, rocket.engine.throttle_history[-1], self.timestep)
+                pos_x = pos_checks(pos_x, rocket.engine.posx_history[-1], self.timestep)
+                pos_y = pos_checks(pos_y, rocket.engine.posy_history[-1], self.timestep)
 
             # Log Current States
             rocket.engine.save_throttle(throttle)
@@ -127,5 +138,5 @@ class Simulation:
             self.jacobian_error = 0
             self.statedot_previous = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
         
-        statedot = full_dynamics(state, rocket, self.wind, self.timestep, t)
+        statedot = full_dynamics(state, rocket, self.current_wind, self.timestep, t)
         return statedot

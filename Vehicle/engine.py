@@ -84,7 +84,10 @@ class Engine:
         self.thrust = maxThrust
 
         # Apply Throttling
-        throttle = thrust / maxThrust
+        if maxThrust == 0:
+            throttle = 1
+        else:
+            throttle = thrust / maxThrust
 
         return(throttle)
     

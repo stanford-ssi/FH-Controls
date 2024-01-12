@@ -93,15 +93,15 @@ def create_3_graph(tab, var, ts, tf, names, title):
     canvas.draw()
     canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
-def create_graph(tab, title, data):
+def create_graph(tab, title, data, xlabel, ylabel):
     # Create a Matplotlib figure and axis
     fig, ax = plt.subplots()
     ax.plot(data)
 
     # Set title and labels
     ax.set_title(title)
-    ax.set_xlabel('X-axis label')
-    ax.set_ylabel('Y-axis label')
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
 
     # Embed Matplotlib figure in Tkinter window
     canvas = FigureCanvasTkAgg(fig, master=tab)
@@ -162,6 +162,12 @@ def create_gui(sim, planned_trajectory, trajectory, ts, tf):
     tab6 = ttk.Frame(notebook)
     plot_dynamics(tab6, dynamics[9:18], ts, tf, rotational_dynamics_plot_names)
     notebook.add(tab6, text="| Rotational Dynamics |")
+    
+    # Wind
+    rotational_dynamics_plot_names = ["Pitch", "Yaw", "Roll", "Pitch Rate", "Yaw Rate", "Roll Rate", "Pitch Acceleration", "Yaw Acceleration", "Roll Acceleration"]
+    tab7 = ttk.Frame(notebook)
+    plot_variables_vs_time(tab7, [np.linalg.norm(sim.wind_history, axis=1), sim.rocket.engine.posx_history * 10, sim.rocket.engine.posy_history * 10, sim.rocket.engine.throttle_history], ts, tf, "Wind")
+    notebook.add(tab7, text="| Wind |")
     
     
     notebook.pack(expand=1.25, fill="both", padx=10, pady=10)

@@ -4,6 +4,7 @@ from tkinter import ttk
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from Simulator.simulationConstants import *
 
 def pull_dynamics(trajectory, ts, tf):
     frame=len(trajectory)
@@ -137,8 +138,10 @@ def create_gui(sim, planned_trajectory, trajectory, ts, tf):
     notebook.add(tab2, text="| Rotation Error |")
     
     # Controls
-    controls = [sim.rocket.engine.posx_history, sim.rocket.engine.posy_history, sim.rocket.engine.throttle_history]
-    control_names = ["X Actuator Position", "Y Actuator Position", "Throttle"]
+    gimbal_theta = np.arctan2(sim.rocket.engine.posy_history, sim.rocket.engine.posx_history) * RAD2DEG
+    gimbal_psi = np.arctan2(np.sqrt((sim.rocket.engine.posx_history ** 2) + (sim.rocket.engine.posy_history ** 2)), sim.rocket.engine.length) * RAD2DEG
+    controls = [gimbal_psi, gimbal_theta, sim.rocket.engine.throttle_history]
+    control_names = ["Gimbal Psi", "Gimbal Theta", "Throttle"]
     tab3 = ttk.Frame(notebook)
     create_3_graph(tab3, controls, ts, tf, control_names, "Control Inputs")
     notebook.add(tab3, text="| Control Inputs |")

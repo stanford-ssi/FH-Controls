@@ -21,20 +21,20 @@ def state_space_control(state_error, rocket, wind, ts):
     B = np.delete(B, 8, 0)
             
     # Q and R
-    Q = np.identity(len(state_error) - 2 + 6) #Minus 2 to remove roll stuff plus 6 to get integral control
+    Q = np.identity(len(state_error) - 2 + 3) #Minus 2 to remove roll stuff plus 3 to get integral control
     R = np.identity(len(linearized_u))
     Q[2][2] = Q_Z_POS #Penalize Z Error
     Q[5][5] = Q_Z_VEL #Penalize Z velocity Error
     R[2][2] = R_THROTTLE #Penalize Throttle movement
             
     # Control
-    C = np.zeros((6, 10))
-    breakpoint()
+    # breakpoint()
+    C = np.append(np.identity(3), np.zeros((3, 7)), axis=1)
 
     K,S,E = control.lqr(A, B, Q, R, integral_action=C)
     K = np.insert(K, 8, 0, axis=1)
     K = np.insert(K, 11, 0, axis=1)
-    U = np.dot(-K, state_error) + linearized_u # U is the desired accelerations
+    U = np.dot(-K, np.append(state_error, state_error[0:3])) + linearized_u # U is the desired accelerations
     
     return U, K
 

@@ -112,7 +112,7 @@ class Simulation:
             gimbal_psi = np.arctan2(np.sqrt((U[1] ** 2) + (U[0] ** 2)), U[2])
             T = rocket.mass * np.sqrt((U[0] ** 2) + (U[1] ** 2) + (U[2] ** 2))
             gimbal_r = np.tan(gimbal_psi) * rocket.engine.length
-            if gimbal_theta > 0:
+            if (gimbal_theta < np.pi / 2) and (gimbal_theta > -np.pi / 2):
                 pos_x = np.sqrt((gimbal_r ** 2) / (1 + (np.tan(gimbal_theta) ** 2)))
             else:
                 pos_x = -1 * np.sqrt((gimbal_r ** 2) / (1 + (np.tan(gimbal_theta) ** 2)))
@@ -121,10 +121,10 @@ class Simulation:
             
             # Check if railed
             if not t == 0:
-                #throttle = throttle_checks(throttle, rocket.engine.throttle_history[-1], self.timestep)
-                #pos_x = pos_checks(pos_x, rocket.engine.posx_history[-1], self.timestep)
-                #pos_y = pos_checks(pos_y, rocket.engine.posy_history[-1], self.timestep)
                 pass
+                # throttle = throttle_checks(throttle, rocket.engine.throttle_history[-1], self.timestep)
+                # pos_x = pos_checks(pos_x, rocket.engine.posx_history[-1], self.timestep)
+                # pos_y = pos_checks(pos_y, rocket.engine.posy_history[-1], self.timestep)
 
             # Log Current States
             rocket.engine.save_throttle(throttle)

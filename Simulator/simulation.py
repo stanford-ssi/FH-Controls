@@ -28,6 +28,8 @@ class Simulation:
         self.wind_history = np.array([[0,0,0]]) 
         self.base_wind = wind
         self.current_wind = wind
+        
+        self.K_history = np.zeros((3,12,1))
 
     def propogate(self):
         """ Simple propogator
@@ -84,8 +86,8 @@ class Simulation:
         if (t == 0) or (t >= t_vec[self.current_step] and self.previous_time < t_vec[self.current_step]):
 
             # Calculate Errors
-            position_error = ideal_trajectory[self.current_step] - state[0:6]
-            rotational_error = [0, 0, 0, 0, 0, 0] - state[6:12]
+            position_error = state[0:6] - ideal_trajectory[self.current_step]
+            rotational_error = state[6:12] - [0, 0, 0, 0, 0, 0]
             state_error = np.concatenate((position_error, rotational_error), axis=0)
 
             if t == 0:
@@ -103,12 +105,13 @@ class Simulation:
                 self.wind_history = np.append(self.wind_history, [self.current_wind], axis=0)
 
             # Call Controller
-            U = state_space_control(state_error, rocket, self.current_wind, self.timestep)
-            
+            U, K = state_space_control(state_error, rocket, self.current_wind, self.timestep)
+           
             # Convert desired accelerations to throttle and gimbal angles
             gimbal_theta = np.arctan2(U[1], U[0])
-            gimbal_psi = np.arctan2(U[0], U[2] * np.cos(gimbal_theta))
-            T = U[2] * rocket.mass / np.cos(gimbal_psi)
+            gimbal_psi = np.arctan2(np.sqrt((U[1] ** 2) + (U[0] ** 2)), U[2])
+            breakpoint()
+            T = rocket.mass * np.sqrt((U[0] ** 2) + (U[1] ** 2) + (U[2] ** 2))
             gimbal_r = np.tan(gimbal_psi) * rocket.engine.length
             if gimbal_theta > 0:
                 pos_x = np.sqrt((gimbal_r ** 2) / (1 + (np.tan(gimbal_theta) ** 2)))
@@ -119,9 +122,10 @@ class Simulation:
             
             # Check if railed
             if not t == 0:
-                throttle = throttle_checks(throttle, rocket.engine.throttle_history[-1], self.timestep)
-                pos_x = pos_checks(pos_x, rocket.engine.posx_history[-1], self.timestep)
-                pos_y = pos_checks(pos_y, rocket.engine.posy_history[-1], self.timestep)
+                #throttle = throttle_checks(throttle, rocket.engine.throttle_history[-1], self.timestep)
+                #pos_x = pos_checks(pos_x, rocket.engine.posx_history[-1], self.timestep)
+                #pos_y = pos_checks(pos_y, rocket.engine.posy_history[-1], self.timestep)
+                pass
 
             # Log Current States
             rocket.engine.save_throttle(throttle)

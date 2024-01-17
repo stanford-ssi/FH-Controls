@@ -98,7 +98,7 @@ class Simulation:
                 self.rotation_error_history = np.append(self.rotation_error_history, rotational_error.reshape((1, 6)), axis=0)
 
             # Determine wind at this moment in time
-            #self.current_wind = get_wind(self.base_wind, self.current_wind)
+            self.current_wind = get_wind(self.base_wind, self.current_wind)
             if t == 0:
                 self.wind_history = np.array([self.current_wind])
             else:
@@ -106,11 +106,10 @@ class Simulation:
 
             # Call Controller
             U, K = state_space_control(state_error, rocket, self.current_wind, self.timestep)
-           
+            
             # Convert desired accelerations to throttle and gimbal angles
-            gimbal_theta = np.arctan2(U[1], U[0])
+            gimbal_theta = np.arctan2(-U[1], -U[0])
             gimbal_psi = np.arctan2(np.sqrt((U[1] ** 2) + (U[0] ** 2)), U[2])
-            breakpoint()
             T = rocket.mass * np.sqrt((U[0] ** 2) + (U[1] ** 2) + (U[2] ** 2))
             gimbal_r = np.tan(gimbal_psi) * rocket.engine.length
             if gimbal_theta > 0:

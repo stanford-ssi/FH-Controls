@@ -20,6 +20,6 @@ sim = Simulation(tf, ts, state_0, wind, planned_trajectory)
 # Run Simulation
 trajectory = sim.propogate()
 sim.display_end_info()
-breakpoint()
+
 # Graphs
 create_gui(sim, planned_trajectory, trajectory, ts, tf)

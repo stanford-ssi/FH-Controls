@@ -32,7 +32,7 @@ def state_space_control(state_error, rocket, wind, ts):
     K = np.insert(K, 8, 0, axis=1)
     K = np.insert(K, 11, 0, axis=1)
     U = np.dot(-K, state_error) + linearized_u # U is the desired accelerations
-
+    
     return U, K
 
 def compute_A(state, u, rocket, wind, dt):

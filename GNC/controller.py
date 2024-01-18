@@ -28,10 +28,8 @@ def state_space_control(state_error, rocket, wind, ts):
     R[2][2] = R_THROTTLE #Penalize Throttle movement
             
     # Control
-    # breakpoint()
-    C = np.append(np.identity(3), np.zeros((3, 7)), axis=1)
-
-    K,S,E = control.lqr(A, B, Q, R, integral_action=C)
+    C = np.append(np.identity(3), np.zeros((3, 7)), axis=1) # C is of the form y = Cx, where x is the state and y is the steady state error we care about - in this case just [x y z]
+    K,S,E = control.lqr(A, B, Q, R, integral_action=C) # The K that this spits out has the additional 3 integral terms tacked onto the end, so must add errorx, y, z onto end of state error when solving for U
     K = np.insert(K, 8, 0, axis=1)
     K = np.insert(K, 11, 0, axis=1)
     U = np.dot(-K, np.append(state_error, state_error[0:3])) + linearized_u # U is the desired accelerations

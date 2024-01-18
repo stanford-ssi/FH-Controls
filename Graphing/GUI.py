@@ -125,14 +125,14 @@ def create_gui(sim, planned_trajectory, trajectory, ts, tf):
 
     # Position Error
     position_error = [sim.position_error_history[:,0], sim.position_error_history[:,1], sim.position_error_history[:,2]]
-    error_names = ["X Error", "Y Error", "Z Error"]
+    error_names = ["X Error (m)", "Y Error (m)", "Z Error (m)"]
     tab1 = ttk.Frame(notebook)
     create_3_graph(tab1, position_error, ts, tf, error_names, "Position Error")
     notebook.add(tab1, text="| Position Error |")
 
     # Rotation Error
-    rotation_error = [sim.rotation_error_history[:,0], sim.rotation_error_history[:,1], sim.rotation_error_history[:,2]]
-    rot_error_names = ["Pitch Error", "Yaw Error", "Roll Error"]
+    rotation_error = [sim.rotation_error_history[:,0] * RAD2DEG, sim.rotation_error_history[:,1] * RAD2DEG, sim.rotation_error_history[:,2] * RAD2DEG]
+    rot_error_names = ["Pitch Error (degrees)", "Yaw Error (degrees)", "Roll Error (degrees)"]
     tab2 = ttk.Frame(notebook)
     create_3_graph(tab2, rotation_error, ts, tf, rot_error_names, "Rotation Error")
     notebook.add(tab2, text="| Rotation Error |")
@@ -141,29 +141,33 @@ def create_gui(sim, planned_trajectory, trajectory, ts, tf):
     gimbal_theta = np.arctan2(sim.rocket.engine.posy_history, sim.rocket.engine.posx_history) * RAD2DEG
     gimbal_psi = np.arctan2(np.sqrt((sim.rocket.engine.posx_history ** 2) + (sim.rocket.engine.posy_history ** 2)), sim.rocket.engine.length) * RAD2DEG
     controls = [gimbal_psi, gimbal_theta, sim.rocket.engine.throttle_history]
-    control_names = ["Gimbal Psi", "Gimbal Theta", "Throttle"]
+    control_names = ["Gimbal Psi (degrees)", "Gimbal Theta (degrees)", "Throttle (percent)"]
     tab3 = ttk.Frame(notebook)
     create_3_graph(tab3, controls, ts, tf, control_names, "Control Inputs")
     notebook.add(tab3, text="| Control Inputs |")
     
     # MOI
     moi = [[arr[0,0] for arr in sim.rocket.I_history], [arr[1,1] for arr in sim.rocket.I_history], [arr[2,2] for arr in sim.rocket.I_history]]
-    moi_names = ["Ixx", "Iyy", "Izz"]
+    moi_names = ["Ixx (kgm2)", "Iyy (kgm2)", "Izz (kgm2)"]
     tab4 = ttk.Frame(notebook)
     create_3_graph(tab4, moi, ts, tf, moi_names, "Moments of Inertia")
     notebook.add(tab4, text="| Moments of Inertia |")
 
     # Dynamics
     dynamics = pull_dynamics(trajectory, ts, tf)
-    dynamics_plot_names = ["X Position", "Y Position", "Z Position", "X Velocity", "Y Velocity", "Z Velocity", "X Acceleration", "Y Acceleration", "Z Acceleration"]
+    dynamics_plot_names = ["X Position (m)", "Y Position (m)", "Z Position (m)", 
+                           "X Velocity (m/s)", "Y Velocity (m/s)", "Z Velocity (m/s)", 
+                           "X Acceleration (m/s2)", "Y Acceleration (m/s2)", "Z Acceleration (m/s2)"]
     tab5 = ttk.Frame(notebook)
     plot_dynamics(tab5, dynamics[0:9], ts, tf, dynamics_plot_names)
     notebook.add(tab5, text="| Dynamics |")
 
     # Rotational Dynamics
-    rotational_dynamics_plot_names = ["Pitch", "Yaw", "Roll", "Pitch Rate", "Yaw Rate", "Roll Rate", "Pitch Acceleration", "Yaw Acceleration", "Roll Acceleration"]
+    rotational_dynamics_plot_names = ["Pitch (degrees)", "Yaw (degrees)", "Roll (degrees)", 
+                                      "Pitch Rate (deg/s)", "Yaw Rate (deg/s)", "Roll Rate (deg/s)", 
+                                      "Pitch Acceleration (deg/s2)", "Yaw Acceleration (deg/s2)", "Roll Acceleration (deg/s2)"]
     tab6 = ttk.Frame(notebook)
-    plot_dynamics(tab6, dynamics[9:18], ts, tf, rotational_dynamics_plot_names)
+    plot_dynamics(tab6, [x * RAD2DEG for x in dynamics[9:18]], ts, tf, rotational_dynamics_plot_names)
     notebook.add(tab6, text="| Rotational Dynamics |")
     
     # Wind

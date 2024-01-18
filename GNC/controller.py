@@ -5,12 +5,10 @@ from Simulator.dynamics import dynamics_for_state_space_control
 from Simulator.simulationConstants import GRAVITY as g
 from GNC.controlConstants import *
 
-def state_space_control(state_error, rocket, wind, ts):
-    # State Space Control
-    linearized_x = np.array([0,0,0,0,0,0,0,0,0,0,0,0])
+def state_space_control(state_error, A_orig, B_orig):
+    """State Space Control"""
+    
     linearized_u = np.array([0, 0, g])
-    A_orig = compute_A(linearized_x, linearized_u, rocket, wind, ts)
-    B_orig = compute_B(linearized_x, linearized_u, rocket, wind, ts)
             
     # Remove Roll Columns and Rows
     A = np.delete(A_orig, 11, 0)

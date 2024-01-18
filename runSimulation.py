@@ -8,7 +8,7 @@ from PathPlanner.plan import PlannedTrajectory
 # Pitch is defined as angle from upward z axis towards pos x axis, yaw is angle from upward z towards pos y, and roll is ccw looking down on rocket
 # Rotation order yaw, pitch, roll
 state_0 = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) # Start State [X, Y, Z, VX, VY, VZ, THX, THY, THZ, OMX, OMY, OMZ]
-wind = np.array([1, 1, 0])
+wind = np.array([-15, 5, 0])
 tf = 20
 ts = 0.1
 max_altitude = 50

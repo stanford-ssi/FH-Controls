@@ -3,8 +3,8 @@ MAX_POS = 0.1
 MAX_THROTTLE = 1
 MIN_THROTTLE = 0.1
 
-MAX_THROTTLE_RATE = 10 # per second
-MAX_POS_RATE = 1 # per second
+MAX_THROTTLE_RATE = 5 # per second
+MAX_POS_RATE = 2 # per second
 
 
 # LQR Controller Penalties

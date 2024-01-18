@@ -24,6 +24,8 @@ def state_space_control(state_error, A_orig, B_orig):
     Q[2][2] = Q_Z_POS #Penalize Z Error
     Q[5][5] = Q_Z_VEL #Penalize Z velocity Error
     R[2][2] = R_THROTTLE #Penalize Throttle movement
+    R[0][0] = R_GIMBALS # Penalize gimabl movement
+    R[1][1] = R_GIMBALS
             
     # Control
     C = np.append(np.identity(3), np.zeros((3, 7)), axis=1) # C is of the form y = Cx, where x is the state and y is the steady state error we care about - in this case just [x y z]

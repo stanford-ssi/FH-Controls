@@ -11,10 +11,20 @@ MAX_POS_RATE = 0.01905 # m per second
 
 
 # LQR Controller Penalties
-Q_Z_POS = 1000 # Penalty in z error
-Q_Z_VEL = 100  # Penalty in z velocity error
-R_THROTTLE = 5 # Penalty for throttle control
-R_GIMBALS = 5 # Penalty for gimbal control
+Q_X = 0.5
+Q_Y = 0.5
+Q_Z = 0.02
+Q_VX = 1
+Q_VY = 1
+Q_VZ = 1
+Q_PIT = 0.01
+Q_YAW = 0.01
+Q_VPIT = 0.02
+Q_VYAW = 0.02
+
+R_X = 0.01
+R_Y = 0.01
+R_T = 0.25
 
 
 

@@ -5,12 +5,10 @@ from Simulator.dynamics import dynamics_for_state_space_control
 from Simulator.simulationConstants import GRAVITY as g
 from GNC.controlConstants import *
 
-def state_space_control(state_error, rocket, wind, ts):
-    # State Space Control
-    linearized_x = np.array([0,0,0,0,0,0,0,0,0,0,0,0])
+def state_space_control(state_error, A_orig, B_orig):
+    """State Space Control"""
+    
     linearized_u = np.array([0, 0, g])
-    A_orig = compute_A(linearized_x, linearized_u, rocket, wind, ts)
-    B_orig = compute_B(linearized_x, linearized_u, rocket, wind, ts)
             
     # Remove Roll Columns and Rows
     A = np.delete(A_orig, 11, 0)
@@ -23,9 +21,24 @@ def state_space_control(state_error, rocket, wind, ts):
     # Q and R
     Q = np.identity(len(state_error) - 2 + 3) #Minus 2 to remove roll stuff plus 3 to get integral control
     R = np.identity(len(linearized_u))
-    Q[2][2] = Q_Z_POS #Penalize Z Error
-    Q[5][5] = Q_Z_VEL #Penalize Z velocity Error
-    R[2][2] = R_THROTTLE #Penalize Throttle movement
+
+    Q[0][0] = 1 / (Q_X ** 2)
+    Q[1][1] = 1 / (Q_Y ** 2)
+    Q[2][2] = 1 / (Q_Z ** 2)
+    Q[3][3] = 1 / (Q_VX ** 2)
+    Q[4][4] = 1 / (Q_VY ** 2)
+    Q[5][5] = 1 / (Q_VZ ** 2)
+    Q[6][6] = 1 / (Q_PIT ** 2)
+    Q[7][7] = 1 / (Q_YAW ** 2)
+    Q[8][8] = 1 / (Q_VPIT ** 2)
+    Q[9][9] = 1 / (Q_VYAW ** 2)
+    Q[10][10] = 1 / (Q_X ** 2)
+    Q[11][11] = 1 / (Q_Y ** 2)
+    Q[12][12] = 1 / (Q_Z ** 2)
+    
+    R[0][0] = 1 / (R_X ** 2)
+    R[1][1] = 1 / (R_Y ** 2)
+    R[2][2] = 1 / (R_T ** 2)
             
     # Control
     C = np.append(np.identity(3), np.zeros((3, 7)), axis=1) # C is of the form y = Cx, where x is the state and y is the steady state error we care about - in this case just [x y z]

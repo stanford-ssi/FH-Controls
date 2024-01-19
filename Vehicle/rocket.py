@@ -116,6 +116,7 @@ class Rocket:
         self.massHistory = np.append(self.massHistory, self.mass)
 
     def update_I(self):
+        """ Function that is called to update the moment of inertia of the rocket at the current timestep"""
         overall_com = self.calculate_com()
         
         first_pass = False

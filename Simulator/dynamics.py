@@ -1,7 +1,9 @@
 import numpy as np
+import random
 from scipy.spatial.transform import Rotation
 from Simulator.simulationConstants import GRAVITY as g
 from Simulator.simulationConstants import RHO as rho
+from Simulator.simulationConstants import *
 
 def dynamics_for_state_space_control(state, rocket, wind, dt, acc_x, acc_y, acc_z):
 
@@ -105,3 +107,22 @@ def full_dynamics(state, rocket, wind, dt, t):
 
     return statedot
     
+def accelerations_2_actuator_positions(U, rocket, t):
+    # Conversion
+    gimbal_theta = np.arctan2(-U[1], -U[0])
+    gimbal_psi = np.arctan2(np.sqrt((U[1] ** 2) + (U[0] ** 2)), U[2])
+    T = rocket.mass * np.sqrt((U[0] ** 2) + (U[1] ** 2) + (U[2] ** 2))
+    gimbal_r = np.tan(gimbal_psi) * rocket.engine.length
+    if (gimbal_theta < np.pi / 2) and (gimbal_theta > -np.pi / 2):
+        pos_x = np.sqrt((gimbal_r ** 2) / (1 + (np.tan(gimbal_theta) ** 2)))
+    else:
+        pos_x = -1 * np.sqrt((gimbal_r ** 2) / (1 + (np.tan(gimbal_theta) ** 2)))
+    pos_y = pos_x * np.tan(gimbal_theta)
+    throttle = rocket.engine.get_throttle(t, T)
+    
+    # Add some randomized error
+    pos_x = pos_x + (random.randint(-10, 10) * 0.1 * RANDOMIZED_ERROR_POS) + CONSTANT_ERROR_POS
+    pos_y = pos_y + (random.randint(-10, 10) * 0.1 * RANDOMIZED_ERROR_POS) + CONSTANT_ERROR_POS
+    throttle = throttle + (random.randint(-10, 10) * 0.1 * RANDOMIZED_ERROR_THROTTLE) + CONSTANT_ERROR_THROTTLE
+    
+    return pos_x, pos_y, throttle

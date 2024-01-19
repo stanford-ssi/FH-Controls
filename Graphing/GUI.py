@@ -146,6 +146,13 @@ def create_gui(sim, planned_trajectory, trajectory, ts, tf):
     create_3_graph(tab3, controls, ts, tf, control_names, "Control Inputs")
     notebook.add(tab3, text="| Control Inputs |")
     
+    # Controls 2
+    controls = [sim.rocket.engine.posx_history, sim.rocket.engine.posy_history, sim.rocket.engine.throttle_history]
+    control_names = ["PosX (m)", "PosY (m)", "Throttle (percent)"]
+    tab8 = ttk.Frame(notebook)
+    create_3_graph(tab8, controls, ts, tf, control_names, "Control Inputs")
+    notebook.add(tab8, text="| Control Inputs |")
+    
     # MOI
     moi = [[arr[0,0] for arr in sim.rocket.I_history], [arr[1,1] for arr in sim.rocket.I_history], [arr[2,2] for arr in sim.rocket.I_history]]
     moi_names = ["Ixx (kgm2)", "Iyy (kgm2)", "Izz (kgm2)"]

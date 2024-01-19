@@ -120,22 +120,15 @@ class Simulation:
             U, K = state_space_control(state_error, self.A_orig, self.B_orig)
             
             # Convert desired accelerations to throttle and gimbal angles
-            gimbal_theta = np.arctan2(-U[1], -U[0])
-            gimbal_psi = np.arctan2(np.sqrt((U[1] ** 2) + (U[0] ** 2)), U[2])
-            T = rocket.mass * np.sqrt((U[0] ** 2) + (U[1] ** 2) + (U[2] ** 2))
-            gimbal_r = np.tan(gimbal_psi) * rocket.engine.length
-            if (gimbal_theta < np.pi / 2) and (gimbal_theta > -np.pi / 2):
-                pos_x = np.sqrt((gimbal_r ** 2) / (1 + (np.tan(gimbal_theta) ** 2)))
-            else:
-                pos_x = -1 * np.sqrt((gimbal_r ** 2) / (1 + (np.tan(gimbal_theta) ** 2)))
-            pos_y = pos_x * np.tan(gimbal_theta)
-            throttle = rocket.engine.get_throttle(t, T)
+            pos_x, pos_y, throttle = accelerations_2_actuator_positions(U, rocket, t)
             
             # Perform actuator constraint checks
             if not t == 0:
                 throttle = throttle_checks(throttle, rocket.engine.throttle_history[-1], self.ts)
                 pos_x = pos_checks(pos_x, rocket.engine.posx_history[-1], self.ts)
                 pos_y = pos_checks(pos_y, rocket.engine.posy_history[-1], self.ts)
+            
+            
 
             # Log Current States
             rocket.engine.save_throttle(throttle)

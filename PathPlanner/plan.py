@@ -32,7 +32,7 @@ class PlannedTrajectory:
             return a * (b - t)**3
         
     def sin_trajectory(self, t):
-        return self.max_altitude * (np.sin((2 * t * np.pi / self.tf) - (np.pi / 2)) + 1) / 2
+        return (self.max_altitude * (np.sin((2 * t * np.pi / self.tf) - (np.pi / 2)) + 1) / 2) + 0.1
         
     def xyz_trajectory(self):
         trajectory = [[0, 0, self.sin_trajectory(t)] for t in self.time]

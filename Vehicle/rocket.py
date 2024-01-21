@@ -188,3 +188,4 @@ class Rocket:
         My = force[1] * lever_arm
         moment = [Mx, My, 0]
         return moment
+

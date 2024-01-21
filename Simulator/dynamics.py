@@ -120,9 +120,4 @@ def accelerations_2_actuator_positions(U, rocket, t):
     pos_y = pos_x * np.tan(gimbal_theta)
     throttle = rocket.engine.get_throttle(t, T)
     
-    # Add some randomized error
-    pos_x = pos_x + (random.randint(-10, 10) * 0.1 * RANDOMIZED_ERROR_POS) + CONSTANT_ERROR_POS
-    pos_y = pos_y + (random.randint(-10, 10) * 0.1 * RANDOMIZED_ERROR_POS) + CONSTANT_ERROR_POS
-    throttle = throttle + (random.randint(-10, 10) * 0.1 * RANDOMIZED_ERROR_THROTTLE) + CONSTANT_ERROR_THROTTLE
-    
     return pos_x, pos_y, throttle

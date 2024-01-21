@@ -9,7 +9,7 @@ Cd = 0.26
 AREF = 0.0095 #square m
 
 ### Compoments Section ####
-COMPONENTS = [
+COMPONENTS = [ 
     # Fuel Grain
     {
         'name': 'fuel_grain',

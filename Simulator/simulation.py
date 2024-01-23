@@ -6,7 +6,6 @@ from GNC.constraints import *
 from GNC.controller import *
 from scipy.spatial.transform import Rotation
 from Simulator.dynamics import *
-from Simulator.wind import *
 from Simulator.errorInjection import *
 from Simulator.simulationConstants import GRAVITY as g
 from Simulator.simulationConstants import RHO as rho
@@ -16,7 +15,7 @@ class Simulation:
     def __init__(self, timefinal, simulation_timestep, starting_state, wind, planned_trajectory):
         # Create Engine Object inside Rocket
         self.state_previous = starting_state
-        self.state = starting_state
+        self.state = roll_injection(starting_state)
         self.statedot_previous = np.zeros((1,len(self.state)))
         self.rocket = Vehicle.rocket.Rocket(simulation_timestep)
         self.ideal_trajectory = planned_trajectory
@@ -33,8 +32,8 @@ class Simulation:
         
         # Initialize situation
         self.wind_history = np.array([[0,0,0]]) 
-        self.base_wind = wind
-        self.current_wind = wind
+        self.base_wind = np.array([np.random.normal(0, wind[0]), np.random.normal(0, wind[1]), np.random.normal(0, wind[2])])
+        self.current_wind = self.base_wind
         
         # Preform initial controller calculations
         linearized_x = np.array([0,0,0,0,0,0,0,0,0,0,0,0])
@@ -146,7 +145,7 @@ class Simulation:
             
 
             # Determine wind at this moment in time
-            self.current_wind = get_wind(self.base_wind, self.current_wind)
+            self.current_wind = wind_randomness(self.base_wind, self.current_wind)
             if t == 0:
                 self.wind_history = np.array([self.current_wind])
             else:

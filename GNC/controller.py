@@ -5,7 +5,11 @@ from Simulator.dynamics import dynamics_for_state_space_control
 from Simulator.simulationConstants import GRAVITY as g
 from GNC.controlConstants import *
 
-def state_space_control(state_error, A_orig, B_orig):
+def control_rocket(K, state_error, linearized_u):
+    U = np.dot(-K, np.append(state_error, state_error[0:3])) + linearized_u # U is the desired accelerations
+    return U
+
+def compute_K(len_state, A_orig, B_orig):
     """State Space Control"""
     
     linearized_u = np.array([0, 0, g])
@@ -19,7 +23,7 @@ def state_space_control(state_error, A_orig, B_orig):
     B = np.delete(B, 8, 0)
             
     # Q and R
-    Q = np.identity(len(state_error) - 2 + 3) #Minus 2 to remove roll stuff plus 3 to get integral control
+    Q = np.identity(len_state - 2 + 3) #Minus 2 to remove roll stuff plus 3 to get integral control
     R = np.identity(len(linearized_u))
 
     Q[0][0] = 1 / (Q_X ** 2)
@@ -45,9 +49,8 @@ def state_space_control(state_error, A_orig, B_orig):
     K,S,E = control.lqr(A, B, Q, R, integral_action=C) # The K that this spits out has the additional 3 integral terms tacked onto the end, so must add errorx, y, z onto end of state error when solving for U
     K = np.insert(K, 8, 0, axis=1)
     K = np.insert(K, 11, 0, axis=1)
-    U = np.dot(-K, np.append(state_error, state_error[0:3])) + linearized_u # U is the desired accelerations
     
-    return U, K
+    return K
 
 def compute_A(state, u, rocket, wind, dt):
     """ Compute Jacobian for State dot wrt State"""

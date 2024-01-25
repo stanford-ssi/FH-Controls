@@ -6,7 +6,7 @@ import random
 # Pitch is defined as angle from upward z axis towards pos x axis, yaw is angle from upward z towards pos y, and roll is ccw looking down on rocket
 # Rotation order yaw, pitch, roll
 INITIAL_STATE = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) # Start State [X, Y, Z, VX, VY, VZ, THX, THY, THZ, OMX, OMY, OMZ]
-WIND = [10, 10, 0.25] # Sigma values for wind
+WIND = [5, 5, 0.25] # Sigma values for wind
 FINAL_TIME = 20
 TIMESTEP = 0.1
 TARGET_ALTITUDE = 50 #meters
@@ -35,7 +35,7 @@ ROLL_MU = 0
 
 # Landing Constraints
 MAX_RADIUS_ERROR = 1 # m
-MAX_Z_SPEED = 0.1 # m/s
+MAX_Z_SPEED = 0.3 # m/s
 MAX_XY_SPEED = 0.05 # m/s
 MAX_ROTATION = 0.1 # rad
 MAX_ROTATION_SPEED = 0.02 # rad/s

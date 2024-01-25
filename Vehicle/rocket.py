@@ -14,8 +14,8 @@ class Rocket:
         # Create Engine Object inside Rocket
         self.dt = simulation_timestep
         self.engine = Vehicle.engine.Engine(simulation_timestep)
-        self.mass_noEngine = Vehicle.rocketConstants.ROCKET_MASS
-        self.mass = self.mass_noEngine + self.engine.full_mass  # Rocket Starts Fully Fueled
+        self.mass_noEngine = Vehicle.rocketConstants.ROCKET_MASS_WITHOUT_ENGINE
+        self.mass = Vehicle.rocketConstants.ROCKET_MASS_TOTAL  # Rocket Starts Fully Fueled
         self.massHistory = np.empty(shape=(0))
 
         # Pull Components List
@@ -29,9 +29,6 @@ class Rocket:
         self.I_history = []
         self.update_rocket()
         self.I_history = []
-
-        # Define Tip Angle
-        self.tip_angle = Vehicle.rocketConstants.ROCKET_MAX_TIP
 
     def build_rocket(self, components):
         ''' Take in list of parts from rocket constants and build rocket'''
@@ -59,7 +56,7 @@ class Rocket:
                     component['mass'], component['bottom_z'])
                 mass_check += component['mass']
             new_components.append(new_component)
-        if not mass_check == self.mass:
+        if not round(mass_check, 2) == round(self.mass, 2):
             print('Rocket Mass: %d' % self.mass)
             print('Sum of Components Mass: %d' % mass_check)
             raise ValueError(

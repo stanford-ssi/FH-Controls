@@ -34,7 +34,7 @@ def wind_randomness(base_wind, current_wind):
         
     if (base_wind==current_wind).all():
         if random.random() > WIND_CHANCE_OF_CHANGE:
-            multiplier = 2 * random.random()
+            multiplier = 1.5 * random.random()
             return base_wind * multiplier
         else:
             return base_wind

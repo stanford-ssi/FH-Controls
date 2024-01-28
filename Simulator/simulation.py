@@ -37,9 +37,10 @@ class Simulation:
         
         # Preform initial controller calculations
         linearized_x = np.array([0,0,0,0,0,0,0,0,0,0,0,0])
-        linearized_u = np.array([0, 0, g])
-        self.A_orig = compute_A(linearized_x, linearized_u, self.rocket, self.base_wind, self.ts)
-        self.B_orig = compute_B(linearized_x, linearized_u, self.rocket, self.base_wind, self.ts)
+        self.linearized_u = np.array([0, 0, g])
+        self.A_orig = compute_A(linearized_x, self.linearized_u, self.rocket, self.base_wind, self.ts)
+        self.B_orig = compute_B(linearized_x, self.linearized_u, self.rocket, self.base_wind, self.ts)
+        self.K = compute_K(len(self.state), self.A_orig, self.B_orig)
 
     def propogate(self):
         """ Simple propogator
@@ -127,7 +128,7 @@ class Simulation:
 
         # Check if we are on an actual simulation timestep or if this is ode solving shenanigans
         if (t == 0) or (t >= t_vec[self.current_step] and self.previous_time < t_vec[self.current_step]):
-            
+                        
             # Calculate Errors
             position_error = state[0:6] - ideal_trajectory[self.current_step]
             rotational_error = state[6:12] - [0, 0, 0, 0, 0, 0]
@@ -152,7 +153,7 @@ class Simulation:
                 self.wind_history = np.append(self.wind_history, [self.current_wind], axis=0)
 
             # Call Controller
-            U, K = state_space_control(state_error, self.A_orig, self.B_orig)
+            U = control_rocket(self.K, state_error, self.linearized_u)
             
             # Convert desired accelerations to throttle and gimbal angles
             pos_x, pos_y, throttle = accelerations_2_actuator_positions(U, rocket, t)

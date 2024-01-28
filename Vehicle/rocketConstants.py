@@ -1,4 +1,4 @@
-ROCKET_MASS_TOTAL = 76.23
+ROCKET_MASS_TOTAL = 81.23
 ROCKET_MASS_WITHOUT_ENGINE = 20
 ROCKET_DIAMETER = 0.25
 
@@ -25,7 +25,7 @@ COMPONENTS = [
     {
         'name': 'combustion_chamber',
         'type': 'HollowCylinder',
-        'mass': 25,
+        'mass': 30,
         'inner_radius': 0.0635,
         'outer_radius': 0.06858,
         'length': 0.316738,

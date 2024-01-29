@@ -1,5 +1,5 @@
-ROCKET_MASS_TOTAL = 81.23
-ROCKET_MASS_WITHOUT_ENGINE = 20
+ROCKET_MASS_TOTAL = 98.03
+ROCKET_MASS_WITHOUT_ENGINE = 36.8
 ROCKET_DIAMETER = 0.25
 
 # Aerodynamics, pull these values from open rocket
@@ -51,6 +51,27 @@ COMPONENTS = [
         'outer_radius': 0.1016,
         'length': 0.616712,
         'bottom_z': 0.55      
+    },
+    
+        # Nitrogen
+    {
+        'name': 'n2_tank',
+        'type': 'ChangingSolidCylinder',
+        'start_mass': 2.5,
+        'radius': 0.09,
+        'start_length': 0.65,
+        'bottom_z': 1.25
+    },
+    
+        # Nitrogen Tank
+    {
+        'name': 'combustion_chamber',
+        'type': 'HollowCylinder',
+        'mass': 14.3,
+        'inner_radius': 0.09,
+        'outer_radius': 0.10,
+        'length': 0.65,
+        'bottom_z': 1.25      
     },
     
     # Avionics / random shit

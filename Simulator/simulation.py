@@ -143,8 +143,8 @@ class Simulation:
             # Sense the state from sensors
             sensed_accelerations = rocket.accelerometer.reading(self.statedot_previous[3:6])
             sensed_alphas =  rocket.gyroscope.reading(self.statedot_previous[9:12])
-            positional_state = kalman_position(sensed_accelerations)
-            rotational_state = kalman_rotation(sensed_alphas)
+            positional_state = state[0:6]#kalman_position(sensed_accelerations)
+            rotational_state = state[6:12]#kalman_rotation(sensed_alphas)
             
             # Calculate Errors
             position_error = positional_state - ideal_trajectory[self.current_step]

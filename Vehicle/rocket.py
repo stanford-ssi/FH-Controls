@@ -5,7 +5,7 @@ import Vehicle.rocketConstants
 from Vehicle.components import *
 from scipy.integrate import cumtrapz
 from scipy.interpolate import interp1d
-from sensors import *
+from Vehicle.sensors import *
 
 
 class Rocket:

@@ -5,6 +5,7 @@ import Vehicle.rocketConstants
 from Vehicle.components import *
 from scipy.integrate import cumtrapz
 from scipy.interpolate import interp1d
+from sensors import *
 
 
 class Rocket:
@@ -29,6 +30,10 @@ class Rocket:
         self.I_history = []
         self.update_rocket()
         self.I_history = []
+        
+        # Sensors
+        self.accelerometer = Accelerometer()
+        self.gyroscope = Gyroscope()
 
     def build_rocket(self, components):
         ''' Take in list of parts from rocket constants and build rocket'''

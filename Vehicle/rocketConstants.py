@@ -82,3 +82,8 @@ COMPONENTS = [
         'bottom_z': 2.25
     }
 ]
+
+# Sensors
+ACCELEROMETER_SIGMA = 0.1
+GYROSCOPE_SIGMA = 0.1
+BAROMETER_SIGMA = 0.1

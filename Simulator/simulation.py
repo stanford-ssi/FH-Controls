@@ -2,8 +2,10 @@ import numpy as np
 import scipy.integrate
 import Vehicle.engine
 import Vehicle.rocket
+from Vehicle.sensors import *
 from GNC.constraints import *
 from GNC.controller import *
+from GNC.kalmanFilter import *
 from scipy.spatial.transform import Rotation
 from Simulator.dynamics import *
 from Simulator.errorInjection import *
@@ -20,7 +22,7 @@ class Simulation:
         self.rocket = Vehicle.rocket.Rocket(simulation_timestep)
         self.ideal_trajectory = planned_trajectory
         self.position_error_history = np.array([[0,0,0]]) 
-        self.rotation_error_history = np.array([[0,0,0]]) 
+        self.rotation_error_history = np.array([[0,0,0]])
         
         # Simulation Variables
         self.ts = simulation_timestep
@@ -128,10 +130,25 @@ class Simulation:
 
         # Check if we are on an actual simulation timestep or if this is ode solving shenanigans
         if (t == 0) or (t >= t_vec[self.current_step] and self.previous_time < t_vec[self.current_step]):
-                        
+                                
+            # Determine wind at this moment in time
+            self.current_wind = wind_randomness(self.base_wind, self.current_wind)
+            if t == 0:
+                self.wind_history = np.array([self.current_wind])
+            else:
+                self.wind_history = np.append(self.wind_history, [self.current_wind], axis=0)
+                  
+            ################ LOOP ON ROCKET ##################
+            
+            # Sense the state from sensors
+            sensed_accelerations = rocket.accelerometer.reading(self.statedot_previous[3:6])
+            sensed_alphas =  rocket.gyroscope.reading(self.statedot_previous[9:12])
+            positional_state = kalman_position(sensed_accelerations)
+            rotational_state = kalman_rotation(sensed_alphas)
+            
             # Calculate Errors
-            position_error = state[0:6] - ideal_trajectory[self.current_step]
-            rotational_error = state[6:12] - [0, 0, 0, 0, 0, 0]
+            position_error = positional_state - ideal_trajectory[self.current_step]
+            rotational_error = rotational_state - [0, 0, 0, 0, 0, 0]
             state_error = np.concatenate((position_error, rotational_error), axis=0)
 
             if t == 0:
@@ -139,18 +156,7 @@ class Simulation:
                 self.rotation_error_history = rotational_error.reshape((1, 6))
             else:
                 self.position_error_history = np.append(self.position_error_history, position_error.reshape((1, 6)), axis=0)
-                self.rotation_error_history = np.append(self.rotation_error_history, rotational_error.reshape((1, 6)), axis=0)
-
-            # Inject error into state (mimick sensor error)
-            state = state_error_injection(state)
-            
-
-            # Determine wind at this moment in time
-            self.current_wind = wind_randomness(self.base_wind, self.current_wind)
-            if t == 0:
-                self.wind_history = np.array([self.current_wind])
-            else:
-                self.wind_history = np.append(self.wind_history, [self.current_wind], axis=0)
+                self.rotation_error_history = np.append(self.rotation_error_history, rotational_error.reshape((1, 6)), axis=0)        
 
             # Call Controller
             U = control_rocket(self.K, state_error, self.linearized_u)
@@ -158,7 +164,7 @@ class Simulation:
             # Convert desired accelerations to throttle and gimbal angles
             pos_x, pos_y, throttle = accelerations_2_actuator_positions(U, rocket, t)
             
-            # Inject Error
+            # Inject Error to actuator positions
             pos_x, pos_y, throttle = actuator_error_injection(pos_x, pos_y, throttle)
             
             # Perform actuator constraint checks
@@ -174,6 +180,8 @@ class Simulation:
             rocket.engine.save_thrust(rocket.engine.get_thrust(t, throttle))
             rocket.update_rocket()
 
+            ################ END LOOP ON ROCKET ##################
+
             if not t == t_vec[-1]:
                 self.current_step += 1
             self.previous_time = t
@@ -185,5 +193,5 @@ class Simulation:
             self.jacobian_error = 0
             self.statedot_previous = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
         
-        statedot = full_dynamics(state, rocket, self.current_wind, self.ts, t)
-        return statedot
+        self.statedot_previous = full_dynamics(state, rocket, self.current_wind, self.ts, t)
+        return self.statedot_previous

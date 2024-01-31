@@ -27,10 +27,8 @@ CONSTANT_ERROR_POS = 0.001 # meter
 RANDOMIZED_ERROR_THROTTLE = 0.01
 CONSTANT_ERROR_THROTTLE = 0.01
 
-# Noise for state
-STATE_SIGMA = 0.001
-STATE_MU = 0
-ROLL_SIGMA = 0.1
+# Random Roll Injection
+ROLL_SIGMA = 0.5
 ROLL_MU = 0
 
 # Landing Constraints

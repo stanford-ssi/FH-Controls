@@ -26,6 +26,9 @@ R_X = 0.02
 R_Y = 0.02
 R_T = 0.075
 
+## Kalman Filter
+SIGMA_PROCESS_NOISE = 0.2
+
 
 
 

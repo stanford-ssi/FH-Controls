@@ -52,6 +52,25 @@ def plot_dynamics(tab, dynamic_vars, ts, tf, names=None):
     canvas = FigureCanvasTkAgg(fig, master=tab)
     canvas.draw()
     canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+    
+def plot_sensors(tab, dynamic_vars, ts, tf, names=None):
+    if names is None:
+        names = ["INSERT NAME HERE" for i in range(len(dynamic_vars))]
+    nrows, ncols = 3, 3
+    fig = plt.figure()
+    gs = gridspec.GridSpec(nrows, ncols, height_ratios=[1, 1, 1], width_ratios=[1, 1, 1])
+    
+    for var in dynamic_vars:
+        for i in range(len(var)):
+            var_ax = plt.subplot(gs[i])
+            plot_variable_vs_time_on_subplot(var[i], ts, tf, var_ax, names[i])
+
+    plt.subplots_adjust(wspace=0.5, hspace=0.5)
+    
+    # Embed Matplotlib figure in Tkinter window
+    canvas = FigureCanvasTkAgg(fig, master=tab)
+    canvas.draw()
+    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
 def plot_variable_vs_time_on_subplot(var, ts, tf, ax, name='INSERT NAME HERE'):
 
@@ -192,6 +211,25 @@ def create_gui(sim, planned_trajectory, trajectory, ts, tf):
         tab9 = ttk.Frame(notebook)
         landing_graph(tab9, "Landing Position", sim.position_error_history[-1,0], sim.position_error_history[-1, 1], "X Position (m)", "Y Position (m)")
         notebook.add(tab9, text="| Landing |")
+        
+    # Sensors
+    dynamics = pull_dynamics(trajectory, ts, tf)
+    sensed = pull_dynamics(sim.sensed_state, ts, tf)
+    kalman = pull_dynamics(sim.kalman_state, ts, tf)
+    dynamics_plot_names = ["X Position (m)", "Y Position (m)", "Z Position (m)", 
+                           "X Velocity (m/s)", "Y Velocity (m/s)", "Z Velocity (m/s)", 
+                           "X Acceleration (m/s2)", "Y Acceleration (m/s2)", "Z Acceleration (m/s2)"]
+    tab10 = ttk.Frame(notebook)
+    plot_sensors(tab10, [dynamics[0:9], sensed[0:9], kalman[0:9]], ts, tf, dynamics_plot_names)
+    notebook.add(tab10, text="| Sensed Dynamics |")
+    
+    # Sensors
+    dynamics_plot_names = ["Pitch (degrees)", "Yaw (degrees)", "Roll (degrees)", 
+                                      "Pitch Rate (deg/s)", "Yaw Rate (deg/s)", "Roll Rate (deg/s)", 
+                                      "Pitch Acceleration (deg/s2)", "Yaw Acceleration (deg/s2)", "Roll Acceleration (deg/s2)"]
+    tab11 = ttk.Frame(notebook)
+    plot_sensors(tab11, [[x * RAD2DEG for x in dynamics[9:18]], [x * RAD2DEG for x in sensed[9:18]], [x * RAD2DEG for x in kalman[9:18]]], ts, tf, dynamics_plot_names)
+    notebook.add(tab11, text="| Sensed Rotations |")
     
     
     notebook.pack(expand=1.25, fill="both", padx=10, pady=10)

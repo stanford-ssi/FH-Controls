@@ -52,7 +52,7 @@ def compute_K(len_state, A_orig, B_orig):
     
     return K
 
-def compute_A(state, u, rocket, wind, dt):
+def compute_A(state, u, rocket, dt):
     """ Compute Jacobian for State dot wrt State"""
     h = 0.001
     jacobian = np.zeros((len(state), len(state)))
@@ -61,12 +61,12 @@ def compute_A(state, u, rocket, wind, dt):
         state_minus = deepcopy(state).astype(float)
         state_plus[i] = state_plus[i] + h
         state_minus[i] = state_minus[i] - h
-        statedot_plus = dynamics_for_state_space_control(state_plus, rocket, wind, dt, u[0], u[1], u[2])
-        statedot_minus = dynamics_for_state_space_control(state_minus, rocket, wind, dt, u[0], u[1], u[2])
+        statedot_plus = dynamics_for_state_space_control(state_plus, rocket, dt, u[0], u[1], u[2])
+        statedot_minus = dynamics_for_state_space_control(state_minus, rocket, dt, u[0], u[1], u[2])
         jacobian[i] = (statedot_plus - statedot_minus) / (2 * h)
     return jacobian.T
 
-def compute_B(state, linearized_u, rocket, wind, dt):
+def compute_B(state, linearized_u, rocket, dt):
     """ Compute Jacobian for State dot wrt State"""
     h = 0.001
     jacobian = np.zeros((len(linearized_u), len(state)))
@@ -75,8 +75,8 @@ def compute_B(state, linearized_u, rocket, wind, dt):
         u_minus = deepcopy(linearized_u).astype(float)
         u_plus[i] = linearized_u[i] + h
         u_minus[i] = linearized_u[i] - h
-        statedot_plus = dynamics_for_state_space_control(state, rocket, wind, dt, u_plus[0], u_plus[1], u_plus[2])
-        statedot_minus = dynamics_for_state_space_control(state, rocket, wind, dt, u_minus[0], u_minus[1], u_minus[2])
+        statedot_plus = dynamics_for_state_space_control(state, rocket, dt, u_plus[0], u_plus[1], u_plus[2])
+        statedot_minus = dynamics_for_state_space_control(state, rocket, dt, u_minus[0], u_minus[1], u_minus[2])
         jacobian[i] = (statedot_plus - statedot_minus) / (2 * h)
     return jacobian.T
 

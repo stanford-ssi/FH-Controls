@@ -22,8 +22,8 @@ Q_YAW = 0.01
 Q_VPIT = 0.01
 Q_VYAW = 0.01
 
-R_X = 0.002
-R_Y = 0.002
+R_X = 0.02
+R_Y = 0.02
 R_T = 0.075
 
 ## Kalman Filter

@@ -42,8 +42,8 @@ class Simulation:
         # Preform initial controller calculations
         self.linearized_x = np.array([0,0,0,0,0,0,0,0,0,0,0,0])
         self.linearized_u = np.array([0, 0, g])
-        self.A_orig = compute_A(self.linearized_x, self.linearized_u, self.rocket, self.base_wind, self.ts)
-        self.B_orig = compute_B(self.linearized_x, self.linearized_u, self.rocket, self.base_wind, self.ts)
+        self.A_orig = compute_A(self.linearized_x, self.linearized_u, self.rocket, self.ts)
+        self.B_orig = compute_B(self.linearized_x, self.linearized_u, self.rocket, self.ts)
         self.K = compute_K(len(self.state), self.A_orig, self.B_orig)
         
         # Sensors:
@@ -173,8 +173,8 @@ class Simulation:
                 self.rotation_error_history = np.append(self.rotation_error_history, rotational_error.reshape((1, 6)), axis=0)        
 
             # Call Controller
-            self.A_orig = compute_A(state, self.linearized_u, self.rocket, self.base_wind, self.ts)
-            self.B_orig = compute_B(state, self.linearized_u, self.rocket, self.base_wind, self.ts)
+            self.A_orig = compute_A(state, self.linearized_u, self.rocket, self.ts)
+            self.B_orig = compute_B(state, self.linearized_u, self.rocket, self.ts)
             self.K = compute_K(len(self.state), self.A_orig, self.B_orig)
             U = control_rocket(self.K, state_error, self.linearized_u)
 

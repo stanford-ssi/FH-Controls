@@ -26,7 +26,6 @@ class Simulation:
         self.rotation_error_history = np.array([[0,0,0]])
         self.u = np.array([[0,0,0]])
         
-        
         # Simulation Variables
         self.ts = simulation_timestep
         self.tf = timefinal
@@ -37,14 +36,14 @@ class Simulation:
         
         # Initialize situation
         self.wind_history = np.array([[0,0,0]]) 
-        self.base_wind = np.array([-5, -5, 0])#np.array([np.random.normal(0, wind[0]), np.random.normal(0, wind[1]), np.random.normal(0, wind[2])])
+        self.base_wind = np.array([np.random.normal(0, wind[0]), np.random.normal(0, wind[1]), np.random.normal(0, wind[2])])
         self.current_wind = self.base_wind
         
         # Preform initial controller calculations
-        linearized_x = np.array([0,0,0,0,0,0,0,0,0,0,0,0])
+        self.linearized_x = np.array([0,0,0,0,0,0,0,0,0,0,0,0])
         self.linearized_u = np.array([0, 0, g])
-        self.A_orig = compute_A(linearized_x, self.linearized_u, self.rocket, self.base_wind, self.ts)
-        self.B_orig = compute_B(linearized_x, self.linearized_u, self.rocket, self.base_wind, self.ts)
+        self.A_orig = compute_A(self.linearized_x, self.linearized_u, self.rocket, self.base_wind, self.ts)
+        self.B_orig = compute_B(self.linearized_x, self.linearized_u, self.rocket, self.base_wind, self.ts)
         self.K = compute_K(len(self.state), self.A_orig, self.B_orig)
         
         # Sensors:
@@ -174,15 +173,22 @@ class Simulation:
                 self.rotation_error_history = np.append(self.rotation_error_history, rotational_error.reshape((1, 6)), axis=0)        
 
             # Call Controller
+            self.A_orig = compute_A(state, self.linearized_u, self.rocket, self.base_wind, self.ts)
+            self.B_orig = compute_B(state, self.linearized_u, self.rocket, self.base_wind, self.ts)
+            self.K = compute_K(len(self.state), self.A_orig, self.B_orig)
             U = control_rocket(self.K, state_error, self.linearized_u)
-            self.u = np.append(self.u, U[None, :], axis=0)
+
+            if t == 0:
+                self.u = U[None, :]
+            else:
+                self.u = np.append(self.u, U[None, :], axis=0)
             
             # Convert desired accelerations to throttle and gimbal angles
             pos_x, pos_y, throttle = accelerations_2_actuator_positions(U, rocket, t)
             
             # Inject Error to actuator positions
             pos_x, pos_y, throttle = actuator_error_injection(pos_x, pos_y, throttle)
-            
+
             # Perform actuator constraint checks
             if not t == 0:
                 throttle = throttle_checks(throttle, rocket.engine.throttle_history[-1], self.ts)

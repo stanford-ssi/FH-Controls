@@ -9,7 +9,7 @@ from PathPlanner.plan import PlannedTrajectory
 planned_trajectory = PlannedTrajectory(TARGET_ALTITUDE, FINAL_TIME, TIMESTEP).trajectory
 sims = []
 trajectories = []
-number = 20
+number = 2
 
 with alive_bar(number) as bar:
     for i in range(number):

@@ -136,7 +136,8 @@ class Simulation:
         control inputs and fuel drain."""
         # Check if we are on an actual simulation timestep or if this is ode solving shenanigans
         if (t == 0) or (t >= t_vec[self.current_step] and self.previous_time < t_vec[self.current_step]):
-                              
+            
+            # Log Rocket Rotation                  
             rocket.R = Rotation.from_euler('xyz', [state[7], -state[6], -state[8]]).as_matrix()                  
               
             # Determine wind at this moment in time
@@ -145,9 +146,11 @@ class Simulation:
                 self.wind_history = np.array([self.current_wind])
             else:
                 self.wind_history = np.append(self.wind_history, [self.current_wind], axis=0)
-                  
-            ################ LOOP ON ROCKET ##################
             
+            # Pre Control Work - Rotate State Matrices into current frame                 
+            A, B = update_linearization(self.A_orig, self.B_orig, rocket.R) 
+            self.K = compute_K(len(self.state), A, B)
+
             # Sense the state from sensors
             sensed_state = np.concatenate((rocket.gps.reading(state), 
                                             rocket.accelerometer.read_velocity(state, self.statedot_previous[3:6]), 
@@ -156,7 +159,6 @@ class Simulation:
             self.sensed_state = np.append(self.sensed_state, sensed_state, axis=0)
             kalman_state, self.kalman_P = kalman_filter(state, self.statedot_previous[3:6], sensed_state[0], self.A_orig, self.B_orig, self.ts, rocket.engine.length, P=self.kalman_P)
             self.kalman_state = np.append(self.kalman_state, kalman_state[None, :], axis=0)
-            
             positional_state = state[0:6]#kalman_position(sensed_accelerations)
             rotational_state = state[6:12]#kalman_rotation(sensed_alphas)
             
@@ -164,7 +166,6 @@ class Simulation:
             position_error = positional_state - ideal_trajectory[self.current_step]
             rotational_error = rotational_state - [0, 0, 0, 0, 0, 0]
             state_error = np.concatenate((position_error, rotational_error), axis=0)
-
             if t == 0:
                 self.position_error_history = position_error.reshape((1, 6))
                 self.rotation_error_history = rotational_error.reshape((1, 6))
@@ -173,15 +174,7 @@ class Simulation:
                 self.rotation_error_history = np.append(self.rotation_error_history, rotational_error.reshape((1, 6)), axis=0)        
 
             # Call Controller
-            self.A_orig = compute_A(state, self.linearized_u, self.rocket, self.ts)
-            self.B_orig = compute_B(state, self.linearized_u, self.rocket, self.ts)
-            self.K = compute_K(len(self.state), self.A_orig, self.B_orig)
             U = control_rocket(self.K, state_error, self.linearized_u)
-
-            if t == 0:
-                self.u = U[None, :]
-            else:
-                self.u = np.append(self.u, U[None, :], axis=0)
             
             # Convert desired accelerations to throttle and gimbal angles
             pos_x, pos_y, throttle = accelerations_2_actuator_positions(U, rocket, t)

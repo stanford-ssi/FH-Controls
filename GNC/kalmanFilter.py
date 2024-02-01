@@ -4,30 +4,23 @@ from GNC.controlConstants import *
 def kalman_filter(x, u, Z, A, B, dt, engine_length, P):
     
     # Calculate Process Noise Matrix
-    v = np.array([0.5*dt*dt, 0.5*dt*dt, 0.5*dt*dt, dt, dt, dt, 0.5*dt*dt, 0.5*dt*dt, 0.5*dt*dt, dt, dt, dt]).T
+    v = np.array([0.5*dt*dt, 0.5*dt*dt, 0.5*dt*dt, dt, dt, dt, 0.5*dt*dt, 0.5*dt*dt, 0, dt, dt, 0]).T
     var = SIGMA_PROCESS_NOISE
     Q = np.outer(v * var, v.T)
 
     # Initialization
-    F = np.identity(len(x)) + (A * dt) + (((A * dt) ** 2) / 2) + (((A * dt) ** 3) / 6) + (((A * dt) ** 4) / 24)
+    F = np.identity(len(x)) + (A * dt) + (((A * dt) ** 2) / 2) + (((A * dt) ** 3) / 6) 
     H = np.eye(12)
-    R = np.eye(12)
-
-    # Lists to store estimated states
-    estimated_positions = []
-    estimated_velocities = []
-    
-    ### LINEARIZE AT EVERY STEP
-    
+    R = np.eye(12) * 1000
     
     # Prediction step
-    x_next, P_next = predict_step(x, u, F, B, P, Q)
+    x_next, P_next = predict_step(x, u, F, B, P, Q, dt)
     x_fit, P_fit = update_step(Z, H, R, x_next, P_next)
 
     return x_fit, P_fit
         
-def predict_step(x, u, F, B, P_prev, Q):
-    x_next = np.dot(F, x) #+ np.dot(B, u)# Predicted State Estimate
+def predict_step(x, u, F, B, P_prev, Q, dt):
+    x_next = np.dot(F, x) # Predicted State Estimate
     P_next = np.dot(np.dot(F, P_prev), F.T) + Q # Predicted Estimate Covariance
     return x_next, P_next
 

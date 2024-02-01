@@ -24,28 +24,23 @@ def dynamics_for_state_space_control(state, rocket, dt, acc_x, acc_y, acc_z):
     roll = state[8] # Roll, ccw when looking down on rocket
     R = Rotation.from_euler('xyz', [yaw, -pitch, -roll]).as_matrix()
     R_inv = np.linalg.inv(R)
-
-    # Wind rotation into rocket frame
-    # wind_rf = np.dot(R, wind + v)
-    # wind_force = rocket.find_wind_force(wind_rf, rho)
-    # wind_moment = rocket.find_wind_moment(wind_rf, rho)
     
     # Acceleration rotation into rocket frame
     acc = np.array([acc_x, acc_y, acc_z])
     acc_rf = np.dot(R, acc)
 
     # Calculate Accelerations in rocket frame
-    aX_rf = acc_rf[0] + (-1 * g * R[0][2]) #+ (wind_force[0] / m)
-    aY_rf = acc_rf[1] + (-1 * g * R[1][2]) #+ (wind_force[1] / m)
-    aZ_rf = acc_rf[2] + (-1 * g * R[2][2]) #+ (wind_force[2] / m)
+    aX_rf = acc_rf[0] + (-1 * g * R[0][2])
+    aY_rf = acc_rf[1] + (-1 * g * R[1][2])
+    aZ_rf = acc_rf[2] + (-1 * g * R[2][2])
     a_rf = np.array([aX_rf, aY_rf, aZ_rf])
 
     # Convert Accelerations from rocket frame to global frame
     a_global = np.dot(R_inv, a_rf)
 
     # Calculate Alphas
-    torque = np.array([(acc_rf[0] * m * lever_arm), #+ wind_moment[0],
-                        (acc_rf[1] * m * lever_arm), #+ wind_moment[1],
+    torque = np.array([(acc_rf[0] * m * lever_arm),
+                        (acc_rf[1] * m * lever_arm),
                         0])
     I_dot = (rocket.I - rocket.I_prev) / dt
     alphas = np.dot(np.linalg.inv(rocket.I), torque - np.cross(w, np.dot(rocket.I, w)) - np.dot(I_dot, w))

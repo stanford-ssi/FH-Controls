@@ -7,7 +7,7 @@ MIN_THROTTLE = 0.2 # percent
 
 # Velocity Constraints
 MAX_THROTTLE_RATE = 0.5 # throttles per second, ie 5 --> 500 percent per second
-MAX_POS_RATE = 0.0085# m per second - actuator speed in direction with a bit of saftey margin - should be 0.0092
+MAX_POS_RATE = 0.01# m per second - actuator speed in direction with a bit of saftey margin - should be 0.0092
 
 
 # LQR Controller Penalties
@@ -22,12 +22,12 @@ Q_YAW = 0.01
 Q_VPIT = 0.01
 Q_VYAW = 0.01
 
-R_X = 0.02
-R_Y = 0.02
+R_X = 0.05
+R_Y = 0.05
 R_T = 0.075
 
 ## Kalman Filter
-SIGMA_PROCESS_NOISE = 0.2
+SIGMA_PROCESS_NOISE = 0.01
 
 
 

@@ -1,6 +1,6 @@
 import numpy as np
 import control
-from copy import deepcopy
+from copy import deepcopy, copy
 from Simulator.dynamics import dynamics_for_state_space_control
 from Simulator.simulationConstants import GRAVITY as g
 from GNC.controlConstants import *
@@ -8,6 +8,14 @@ from GNC.controlConstants import *
 def control_rocket(K, state_error, linearized_u):
     U = np.dot(-K, np.append(state_error, state_error[0:3])) + linearized_u # U is the desired accelerations
     return U
+
+def update_linearization(A_old, B_old, R):
+    A = copy(A_old)
+    B = copy(B_old)
+    A[9:12,6:9] = np.dot(R, A[9:12,6:9])
+    A[9:12,9:12] = np.dot(R, A[9:12,9:12])
+    B[9:12,0:3] = np.dot(R, B[9:12,0:3])
+    return A, B
 
 def compute_K(len_state, A_orig, B_orig):
     """State Space Control"""

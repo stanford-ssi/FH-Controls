@@ -44,7 +44,6 @@ class Simulation:
         self.linearized_u = np.array([0, 0, g])
         self.A_orig = compute_A(self.linearized_x, self.linearized_u, self.rocket, self.ts)
         self.B_orig = compute_B(self.linearized_x, self.linearized_u, self.rocket, self.ts)
-        self.K = compute_K(len(self.state), self.A_orig, self.B_orig)
         
         # Sensors:
         self.sensed_state = np.array([[0,0,0,0,0,0,0,0,0,0,0,0]])
@@ -149,7 +148,10 @@ class Simulation:
             
             # Pre Control Work - Rotate State Matrices into current frame                 
             A, B = update_linearization(self.A_orig, self.B_orig, rocket.R) 
-            self.K = compute_K(len(self.state), A, B)
+            if (t / self.tf) < 0.8:
+                self.K = compute_K_flight(len(self.state), A, B)
+            else:
+                self.K = compute_K_landing(len(self.state), A, B)
 
             # Sense the state from sensors
             sensed_state = np.concatenate((rocket.gps.reading(state), 
@@ -157,10 +159,12 @@ class Simulation:
                                             rocket.magnetometer.reading(state), 
                                             rocket.gyroscope.read_velocity(state, self.statedot_previous[9:12]))).reshape((1, 12))
             self.sensed_state = np.append(self.sensed_state, sensed_state, axis=0)
-            kalman_state, self.kalman_P = kalman_filter(state, self.statedot_previous[3:6], sensed_state[0], self.A_orig, self.B_orig, self.ts, rocket.engine.length, P=self.kalman_P)
+            kalman_state, self.kalman_P = kalman_filter(self.kalman_state[-1], self.statedot_previous[3:6], self.sensed_state[-1], self.A_orig, self.B_orig, self.ts, rocket.engine.length, P=self.kalman_P)
             self.kalman_state = np.append(self.kalman_state, kalman_state[None, :], axis=0)
-            positional_state = state[0:6]#kalman_position(sensed_accelerations)
-            rotational_state = state[6:12]#kalman_rotation(sensed_alphas)
+            positional_state = state[0:6]
+            rotational_state = state[6:12]
+            # positional_state = kalman_state[0:6]
+            # rotational_state = kalman_state[6:12]
             
             # Calculate Errors
             position_error = positional_state - ideal_trajectory[self.current_step]
@@ -181,7 +185,7 @@ class Simulation:
             
             # Inject Error to actuator positions
             pos_x, pos_y, throttle = actuator_error_injection(pos_x, pos_y, throttle)
-
+                        
             # Perform actuator constraint checks
             if not t == 0:
                 throttle = throttle_checks(throttle, rocket.engine.throttle_history[-1], self.ts)

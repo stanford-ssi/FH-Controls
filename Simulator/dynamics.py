@@ -4,6 +4,7 @@ from scipy.spatial.transform import Rotation
 from Simulator.simulationConstants import GRAVITY as g
 from Simulator.simulationConstants import RHO as rho
 from Simulator.simulationConstants import *
+from Simulator.errorInjection import *
 
 def dynamics_for_state_space_control(state, rocket, dt, acc_x, acc_y, acc_z):
 
@@ -60,6 +61,7 @@ def full_dynamics(state, rocket, wind, dt, t):
     engine_length = rocket.engine.length
     posX = rocket.engine.posx
     posY = rocket.engine.posy
+    
     v = state[3:6]
     w = state[9:12]
 

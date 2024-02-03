@@ -195,6 +195,16 @@ def create_group_gui(sims, planned_trajectory, trajectories, ts, tf):
     landing_graph(tab9, "Landing Position", [sim.position_error_history[-1,0] for sim in sims if sim.landed==True], [sim.position_error_history[-1, 1] for sim in sims if sim.landed==True], "X Position (m)", "Y Position (m)", num_landed, len(sims))
     notebook.add(tab9, text="| Landing |")
     
+    # U
+    tab10 = ttk.Frame(notebook)
+    Us = [[sim.u[:,0] for sim in sims], [sim.u[:,1] for sim in sims], [sim.u[:,2] for sim in sims]]
+    control_names = ["UX", "UY", "UZ"]
+    for sim in sims:
+        if sim.landed==True:
+            num_landed+=1
+    create_3_graph(tab10, Us, ts, tf, control_names, "Control Inputs")
+    notebook.add(tab10, text="| U |")
+    
     
     notebook.pack(expand=1.25, fill="both", padx=10, pady=10)
     root.mainloop()

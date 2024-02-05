@@ -158,9 +158,16 @@ class Simulation:
                                             rocket.accelerometer.read_velocity(state, self.statedot_previous[3:6]), 
                                             rocket.magnetometer.reading(state), 
                                             rocket.gyroscope.read_velocity(state, self.statedot_previous[9:12]))).reshape((1, 12))
-            self.sensed_state = np.append(self.sensed_state, sensed_state, axis=0)
-            kalman_state, self.kalman_P = kalman_filter(self.kalman_state[-1], self.statedot_previous[3:6], self.sensed_state[-1], self.A_orig, self.B_orig, self.ts, rocket.engine.length, P=self.kalman_P)
-            self.kalman_state = np.append(self.kalman_state, kalman_state[None, :], axis=0)
+            kalman_state, self.kalman_P = kalman_filter(self.kalman_state[-1], self.statedot_previous[3:6], sensed_state[0], self.A_orig, self.B_orig, self.ts, rocket.engine.length, P=self.kalman_P)
+            
+            if t == 0:
+                self.sensed_state[0] = sensed_state
+                self.kalman_state[0] = kalman_state
+            else:
+                self.sensed_state = np.append(self.sensed_state, sensed_state, axis=0)
+                self.kalman_state = np.append(self.kalman_state, kalman_state[None, :], axis=0)
+            
+            
             positional_state = state[0:6]
             rotational_state = state[6:12]
             # positional_state = kalman_state[0:6]

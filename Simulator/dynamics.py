@@ -7,7 +7,17 @@ from Simulator.simulationConstants import *
 from Simulator.errorInjection import *
 
 def dynamics_for_state_space_control(state, rocket, dt, acc_x, acc_y, acc_z):
-
+    """ These are the dynamics used during the linearization for the controller. It is the same as the regular dynamics,
+        except it does not include wind forces, and assumes that the accelerations are given
+        
+        Inputs:
+        - rocket object
+        - timestep length
+        - Accelerations in x, y and z
+        
+        Outputs:
+        - statedot vector (1x12)
+        """
     # Pull Params
     m = rocket.mass
     lever_arm = rocket.com
@@ -52,7 +62,17 @@ def dynamics_for_state_space_control(state, rocket, dt, acc_x, acc_y, acc_z):
     return statedot
     
 def full_dynamics(state, rocket, wind, dt, t):
-
+    """ These are the dynamics used during simulation. It is the full dynamics including wind.
+        
+        Inputs:
+        - rocket object
+        - wind vector in global frame (1x3)
+        - timestep length
+        - current time
+        
+        Outputs:
+        - statedot vector (1x12)
+    """
     # Pull Params
     throttle = rocket.engine.throttle
     T = rocket.engine.get_thrust(t, throttle)
@@ -108,8 +128,20 @@ def full_dynamics(state, rocket, wind, dt, t):
     return statedot
     
 def accelerations_2_actuator_positions(U_gf, rocket, t):
-    # Conversion
-    U = np.dot(rocket.R, U_gf) # Rotate into rocket frame
+    """ Convert control input to engine position and throttle
+    
+    Inputs:
+    - Control input in global frame (1x3)
+    - rocket object
+    - current time
+    
+    Output:
+    - pos_x, the x position of the engine
+    - pos_y, the y position of the engine
+    - throttle, the throttle percent of the engine
+    """
+    # Rotate into rocket frame
+    U = np.dot(rocket.R, U_gf) 
     gimbal_theta = np.arctan2(-U[1], -U[0])
     gimbal_psi = np.arctan2(np.sqrt((U[1] ** 2) + (U[0] ** 2)), U[2])
     T = rocket.mass * np.sqrt((U[0] ** 2) + (U[1] ** 2) + (U[2] ** 2))

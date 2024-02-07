@@ -107,6 +107,7 @@ class Simulation:
         print()
 
     def check_landing(self, state, t):
+        """ Check if the landing was valid"""
         # Check if below threshold altitude
         if state[2] < self.rocket.engine.length + 0.1 and t > 0.75 * self.tf:
             # Check Z speed
@@ -200,11 +201,7 @@ class Simulation:
                 pos_y = pos_checks(pos_y, rocket.engine.posy_history[-1], self.ts)
             
             # Log Current States
-            rocket.engine.save_throttle(throttle)
-            rocket.engine.save_posX(pos_x)
-            rocket.engine.save_posY(pos_y)
-            rocket.engine.save_thrust(rocket.engine.get_thrust(t, throttle))
-            rocket.update_rocket()
+            rocket.update_rocket(throttle, pos_x, pos_y, t)
 
             ################ END LOOP ON ROCKET ##################
 

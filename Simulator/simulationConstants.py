@@ -1,5 +1,4 @@
 import numpy as np
-import random
 
 # Simulation Variables
 # State is all relative to global frame except Z rotation which is rocket frame
@@ -14,14 +13,13 @@ TARGET_ALTITUDE = 50 #meters
 # Physical Constants
 GRAVITY = 9.81 # m/s^2
 RHO = 1.225 #kg/m^3
-
 RAD2DEG = 57.2958
 
 # Randomized Wind Variables
 WIND_CHANCE_OF_CHANGE = 0.01
 WIND_CHANGE_LENGTH = 0.96
 
-# Disturbance for pos and throttle
+# Disturbance for engine position and throttle
 RANDOMIZED_ERROR_POS = 0.0001 # meter
 CONSTANT_ERROR_POS = 0.001 # meter
 RANDOMIZED_ERROR_THROTTLE = 0.01

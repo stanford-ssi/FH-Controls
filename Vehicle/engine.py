@@ -110,5 +110,3 @@ class Engine:
         """ Takes in the current Thrust and saves it into the thrust history"""
         self.thrust_history = np.append(self.thrust_history, thrust)
         
-    def pull_throttle_history(self):
-        pass

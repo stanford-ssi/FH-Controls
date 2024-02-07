@@ -8,7 +8,7 @@ Cp = -0.75 # m from top of rocket
 Cd = 0.18
 AREF = 0.0095 #square m
 
-### Compoments Section ####
+### Compoments Section - Build major rocket components here. z = 0 is the bottom of the rocket####
 COMPONENTS = [ 
     # Fuel Grain
     {

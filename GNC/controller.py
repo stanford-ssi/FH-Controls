@@ -6,10 +6,33 @@ from Simulator.simulationConstants import GRAVITY as g
 from GNC.controlConstants import *
 
 def control_rocket(K, state_error, linearized_u):
+    """ Function that is called to get control inputs at each time step
+    
+    Inputs:
+    - Controller K matrix
+    - State error in global frame
+    - linearized control input 
+    
+    Output:
+    - Control Input Vector U
+    """
     U = np.dot(-K, np.append(state_error, state_error[0:3])) + linearized_u # U is the desired accelerations
     return U
 
 def update_linearization(A_old, B_old, R):
+    """ Update linearization to account for rocket rotation
+    
+    Inputs:
+    - Old A matrix
+    - Old B matrix
+    - Rocket rotation matrix R
+    
+    Output
+    - rotated A 
+    - rotated B
+    
+    """
+    
     A = copy(A_old)
     B = copy(B_old)
     A[9:12,6:9] = np.dot(R, A[9:12,6:9])
@@ -17,17 +40,23 @@ def update_linearization(A_old, B_old, R):
     B[9:12,0:3] = np.dot(R, B[9:12,0:3])
     return A, B
 
-def compute_K_flight(len_state, A_orig, B_orig):
-    """State Space Control"""
+def compute_K_flight(len_state, A, B):
+    """Compute the K matrix for the flight phase of the mission using lqr
+    
+    Inputs:
+    - length of state
+    - A matrix
+    - B matrix 
+    """
     
     linearized_u = np.array([0, 0, g])
             
     # Remove Roll Columns and Rows
-    A = np.delete(A_orig, 11, 0)
+    A = np.delete(A, 11, 0)
     A = np.delete(A, 11, 1)
     A = np.delete(A, 8, 0)
     A = np.delete(A, 8, 1)
-    B = np.delete(B_orig, 11, 0)
+    B = np.delete(B, 11, 0)
     B = np.delete(B, 8, 0)
             
     # Q and R
@@ -61,7 +90,13 @@ def compute_K_flight(len_state, A_orig, B_orig):
     return K
 
 def compute_K_landing(len_state, A_orig, B_orig):
-    """State Space Control"""
+    """Compute the K matrix for the landing phase of the mission using lqr. The controller constants are more constrained than the flight phase.
+    
+    Inputs:
+    - length of state
+    - A matrix
+    - B matrix 
+    """
     
     linearized_u = np.array([0, 0, g])
             
@@ -103,9 +138,15 @@ def compute_K_landing(len_state, A_orig, B_orig):
     
     return K
 
-
 def compute_A(state, u, rocket, dt):
-    """ Compute Jacobian for State dot wrt State"""
+    """ Compute Jacobian for the A matrix (State dot wrt State)
+    
+    Inputs:
+    - state (1x12)
+    - Control input U (1x3)
+    - rocket object
+    - timestep length
+    """
     h = 0.001
     jacobian = np.zeros((len(state), len(state)))
     for i in range(len(state)):
@@ -119,7 +160,14 @@ def compute_A(state, u, rocket, dt):
     return jacobian.T
 
 def compute_B(state, linearized_u, rocket, dt):
-    """ Compute Jacobian for State dot wrt State"""
+    """ Compute Jacobian for the B matrix (State dot wrt control input)
+    
+    Inputs:
+    - state (1x12)
+    - Control input U (1x3)
+    - rocket object
+    - timestep length
+    """
     h = 0.001
     jacobian = np.zeros((len(linearized_u), len(state)))
     for i in range(len(linearized_u)):

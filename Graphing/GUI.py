@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from Simulator.simulationConstants import *
+import math
 
 def pull_dynamics(trajectory, ts, tf):
     frame=len(trajectory)
@@ -36,84 +37,54 @@ def pull_dynamics(trajectory, ts, tf):
 
     return [x_pos, y_pos, z_pos, x_vel, y_vel, z_vel, x_acc, y_acc, z_acc, theta_x, theta_y, theta_z, omega_x, omega_y, omega_z, x_alpha, y_alpha, z_alpha]
 
-def plot_dynamics(tab, dynamic_vars, ts, tf, names=None):
-    if names is None:
-        names = ["INSERT NAME HERE" for i in range(len(dynamic_vars))]
-    nrows, ncols = 3, 3
-    fig = plt.figure()
-    gs = gridspec.GridSpec(nrows, ncols, height_ratios=[1, 1, 1], width_ratios=[1, 1, 1])
-    for i in range(len(dynamic_vars)):
-        var_ax = plt.subplot(gs[i])
-        plot_variable_vs_time_on_subplot(dynamic_vars[i], ts, tf, var_ax, names[i])
 
-    plt.subplots_adjust(wspace=0.5, hspace=0.5)
+def create_graph_set(tab, var, ts, tf, names, num_graphs, legend):
     
-    # Embed Matplotlib figure in Tkinter window
-    canvas = FigureCanvasTkAgg(fig, master=tab)
-    canvas.draw()
-    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-    
-def plot_sensors(tab, dynamic_vars, ts, tf, names=None):
-    if names is None:
-        names = ["INSERT NAME HERE" for i in range(len(dynamic_vars))]
-    nrows, ncols = 3, 3
+    #this figures out how to chunk the graphs to make them easily visible
+    if math.sqrt(num_graphs).is_integer(): 
+        num_rows, num_cols = int(math.sqrt(num_graphs)), int(math.sqrt(num_graphs))
+    elif num_graphs<=3:
+        num_rows, num_cols = 1, 3
+    elif num_graphs<=12:
+        num_rows, num_cols = int(num_graphs/3) +1, 3
+    else:
+        num_rows, num_cols = int(num_graphs/4) +1, 4
+
     fig = plt.figure()
-    gs = gridspec.GridSpec(nrows, ncols, height_ratios=[1, 1, 1], width_ratios=[1, 1, 1])
-    
-    for var in dynamic_vars:
-        for i in range(len(var)):
+    gs = gridspec.GridSpec(num_rows, num_cols, height_ratios=[1] * num_rows, width_ratios=[1] * num_cols)
+
+    #Ty/except is not the best way to do this, but allows this function to work for all the weird kinds of setup there is
+    try:
+        for i in range(len(names)):
             var_ax = plt.subplot(gs[i])
-            plot_variable_vs_time_on_subplot(var[i], ts, tf, var_ax, names[i])
+            plot_graph(var[i], ts, tf, var_ax, legend[i], names[i])
+    except:
+        for v in range(len(var)):
+            for i in range(len(names)):
+                var_ax = plt.subplot(gs[i])
+                plot_graph(var[v][i], ts, tf, var_ax, legend[v], names[i])
+
 
     plt.subplots_adjust(wspace=0.5, hspace=0.5)
-    
-    # Embed Matplotlib figure in Tkinter window
+
     canvas = FigureCanvasTkAgg(fig, master=tab)
     canvas.draw()
     canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
-def plot_variable_vs_time_on_subplot(var, ts, tf, ax, name='INSERT NAME HERE'):
+
+def plot_graph(var, ts, tf, ax, legend, name='INSERT NAME HERE'):
 
     t = np.linspace(0, tf, int(tf/ts)+1)
 
-    ax.plot(t[0:len(var)], var)
+    ax.plot(t[0:len(var)], var, label = legend)
 
     ax.set_title("%s vs Time"%name)
     ax.set_xlabel("Time")
     ax.set_ylabel(name)
-
-def plot_variables_vs_time(tab, vars, ts, tf, name='INSERT NAME HERE'):
-
-    fig, ax = plt.subplots()
-
-    t = np.linspace(0, tf, int(tf/ts)+1)
-
-    for var in vars:
-        ax.plot(t[0:len(var)], var)
+    ax.legend()
 
 
-    ax.set_title("%s vs Time"%name)
-    ax.set_xlabel("Time")
-    ax.set_ylabel(name)
-
-    # Embed Matplotlib figure in Tkinter window
-    canvas = FigureCanvasTkAgg(fig, master=tab)
-    canvas.draw()
-    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-    
-def create_3_graph(tab, var, ts, tf, names, title):
-    nrows, ncols = 1, 3
-    fig, axs = plt.subplots(nrows, ncols)
-    for i in range(3):
-        var_ax = axs[i%ncols]
-        plot_variable_vs_time_on_subplot(var[i], ts, tf, var_ax, names[i])
-    
-    # Embed Matplotlib figure in Tkinter window
-    canvas = FigureCanvasTkAgg(fig, master=tab)
-    canvas.draw()
-    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-
-def landing_graph(tab, title, xdata, ydata, xlabel, ylabel):
+def plot_landing_graph(tab, title, xdata, ydata, xlabel, ylabel):
     # Create a Matplotlib figure and axis
     fig, ax = plt.subplots()
     ax.scatter(xdata, ydata)
@@ -132,105 +103,126 @@ def landing_graph(tab, title, xdata, ydata, xlabel, ylabel):
     canvas.draw()
     canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
+
 def create_gui(sim, planned_trajectory, trajectory, ts, tf):
+    
+    #Set up tkinter
     root = tk.Tk()
     root.title("Simulation Data")
-
     style = ttk.Style()
     style.configure("TNotebook.Tab", font=('Helvetica', 20))  # Adjust font size here
-
     notebook = ttk.Notebook(root)
+
+    #Get data
+    true_dynamics = pull_dynamics(trajectory, ts, tf)
+    sensed_dynamics = pull_dynamics(sim.sensed_state, ts, tf)
+    kalman_dynamics = pull_dynamics(sim.kalman_state, ts, tf)
 
     # Altitude vs Time
     tab0 = ttk.Frame(notebook)
-    plot_variables_vs_time(tab0, [planned_trajectory[:,2], trajectory[:,2], sim.rocket.engine.throttle_history * 10], ts, tf, name="Altitude")
+    legend = ["T"]
+    create_graph_set(tab0, [planned_trajectory[:,2], trajectory[:,2], sim.rocket.engine.throttle_history * 10], ts, tf, ["Altitude"], 1, legend)
     notebook.add(tab0, text="| ALTITUDE |")
 
     # Position Error
+    tab1 = ttk.Frame(notebook)
     position_error = [sim.position_error_history[:,0], sim.position_error_history[:,1], sim.position_error_history[:,2]]
     error_names = ["X Error (m)", "Y Error (m)", "Z Error (m)"]
-    tab1 = ttk.Frame(notebook)
-    create_3_graph(tab1, position_error, ts, tf, error_names, "Position Error")
+    legend = ["T", "T", "T"]
+    create_graph_set(tab1, position_error, ts, tf, error_names, 3, legend)
     notebook.add(tab1, text="| Position Error |")
 
     # Rotation Error
+    tab2 = ttk.Frame(notebook)
     rotation_error = [sim.rotation_error_history[:,0] * RAD2DEG, sim.rotation_error_history[:,1] * RAD2DEG, sim.rotation_error_history[:,2] * RAD2DEG]
     rot_error_names = ["Pitch Error (degrees)", "Yaw Error (degrees)", "Roll Error (degrees)"]
-    tab2 = ttk.Frame(notebook)
-    create_3_graph(tab2, rotation_error, ts, tf, rot_error_names, "Rotation Error")
+    legend = ["T", "T", "T"]
+    create_graph_set(tab2, rotation_error, ts, tf, rot_error_names, 3, legend)
     notebook.add(tab2, text="| Rotation Error |")
     
     # Controls
+    tab3 = ttk.Frame(notebook)
     gimbal_theta = np.arctan2(sim.rocket.engine.posy_history, sim.rocket.engine.posx_history) * RAD2DEG
     gimbal_psi = np.arctan2(np.sqrt((sim.rocket.engine.posx_history ** 2) + (sim.rocket.engine.posy_history ** 2)), sim.rocket.engine.length) * RAD2DEG
     controls = [gimbal_psi, gimbal_theta, sim.rocket.engine.throttle_history]
     control_names = ["Gimbal Psi (degrees)", "Gimbal Theta (degrees)", "Throttle (percent)"]
-    tab3 = ttk.Frame(notebook)
-    create_3_graph(tab3, controls, ts, tf, control_names, "Control Inputs")
+    legend = ["T", "T", "T"]
+    create_graph_set(tab3, controls, ts, tf, control_names, 3, legend)
     notebook.add(tab3, text="| Control Inputs |")
     
-    # Controls 2
-    controls = [sim.rocket.engine.posx_history, sim.rocket.engine.posy_history, sim.rocket.engine.throttle_history]
-    control_names = ["PosX (m)", "PosY (m)", "Throttle (percent)"]
-    tab8 = ttk.Frame(notebook)
-    create_3_graph(tab8, controls, ts, tf, control_names, "Control Inputs")
-    notebook.add(tab8, text="| Control Inputs |")
-    
     # MOI
+    tab4 = ttk.Frame(notebook)
     moi = [[arr[0,0] for arr in sim.rocket.I_history], [arr[1,1] for arr in sim.rocket.I_history], [arr[2,2] for arr in sim.rocket.I_history]]
     moi_names = ["Ixx (kgm2)", "Iyy (kgm2)", "Izz (kgm2)"]
-    tab4 = ttk.Frame(notebook)
-    create_3_graph(tab4, moi, ts, tf, moi_names, "Moments of Inertia")
+    legend = ["T", "T", "T"]
+    create_graph_set(tab4, moi, ts, tf, moi_names, 3, legend)
     notebook.add(tab4, text="| Moments of Inertia |")
 
     # Dynamics
-    dynamics = pull_dynamics(trajectory, ts, tf)
+    tab5 = ttk.Frame(notebook)
     dynamics_plot_names = ["X Position (m)", "Y Position (m)", "Z Position (m)", 
                            "X Velocity (m/s)", "Y Velocity (m/s)", "Z Velocity (m/s)", 
                            "X Acceleration (m/s2)", "Y Acceleration (m/s2)", "Z Acceleration (m/s2)"]
-    tab5 = ttk.Frame(notebook)
-    plot_dynamics(tab5, dynamics[0:9], ts, tf, dynamics_plot_names)
+    legend = ["T", "T", "T", "S", "S", "S", "K", "K", "K"]
+    create_graph_set(tab5, true_dynamics[0:9], ts, tf, dynamics_plot_names, 9, legend)
     notebook.add(tab5, text="| Dynamics |")
 
     # Rotational Dynamics
+    tab6 = ttk.Frame(notebook)
     rotational_dynamics_plot_names = ["Pitch (degrees)", "Yaw (degrees)", "Roll (degrees)", 
                                       "Pitch Rate (deg/s)", "Yaw Rate (deg/s)", "Roll Rate (deg/s)", 
                                       "Pitch Acceleration (deg/s2)", "Yaw Acceleration (deg/s2)", "Roll Acceleration (deg/s2)"]
-    tab6 = ttk.Frame(notebook)
-    plot_dynamics(tab6, [x * RAD2DEG for x in dynamics[9:18]], ts, tf, rotational_dynamics_plot_names)
+    legend = ["T", "T", "T", "S", "S", "S", "K", "K", "K"]
+    create_graph_set(tab6, [x * RAD2DEG for x in true_dynamics[9:18]], ts, tf, rotational_dynamics_plot_names, 9, legend)
     notebook.add(tab6, text="| Rotational Dynamics |")
     
     # Wind
-    rotational_dynamics_plot_names = ["Pitch", "Yaw", "Roll", "Pitch Rate", "Yaw Rate", "Roll Rate", "Pitch Acceleration", "Yaw Acceleration", "Roll Acceleration"]
     tab7 = ttk.Frame(notebook)
-    plot_variables_vs_time(tab7, [np.linalg.norm(sim.wind_history, axis=1), sim.rocket.engine.posx_history * 10, sim.rocket.engine.posy_history * 10, sim.rocket.engine.throttle_history], ts, tf, "Wind")
+    rotational_dynamics_plot_names = ["Pitch", "Yaw", "Roll", "Pitch Rate", "Yaw Rate", "Roll Rate", "Pitch Acceleration", "Yaw Acceleration", "Roll Acceleration"]
+    legend = ["T"]
+    create_graph_set(tab7, [np.linalg.norm(sim.wind_history, axis=1), sim.rocket.engine.posx_history * 10, sim.rocket.engine.posy_history * 10, sim.rocket.engine.throttle_history], ts, tf, ["Wind"], 1, legend)
     notebook.add(tab7, text="| Wind |")
     
+    # Controls 2
+    tab8 = ttk.Frame(notebook)
+    controls = [sim.rocket.engine.posx_history, sim.rocket.engine.posy_history, sim.rocket.engine.throttle_history]
+    control_names = ["PosX (m)", "PosY (m)", "Throttle (percent)"]
+    legend = ["T", "T", "T"]
+    create_graph_set(tab8, controls, ts, tf, control_names, 3, legend)
+    notebook.add(tab8, text="| Control Inputs |")
+
     # Landing
+    tab9 = ttk.Frame(notebook)
     if sim.landed == True:
-        tab9 = ttk.Frame(notebook)
-        landing_graph(tab9, "Landing Position", sim.position_error_history[-1,0], sim.position_error_history[-1, 1], "X Position (m)", "Y Position (m)")
+        plot_landing_graph(tab9, "Landing Position", sim.position_error_history[-1,0], sim.position_error_history[-1, 1], "X Position (m)", "Y Position (m)")
         notebook.add(tab9, text="| Landing |")
         
     # Sensors
-    dynamics = pull_dynamics(trajectory, ts, tf)
-    sensed = pull_dynamics(sim.sensed_state, ts, tf)
-    kalman = pull_dynamics(sim.kalman_state, ts, tf)
+    tab10 = ttk.Frame(notebook)
     dynamics_plot_names = ["X Position (m)", "Y Position (m)", "Z Position (m)", 
                            "X Velocity (m/s)", "Y Velocity (m/s)", "Z Velocity (m/s)", 
                            "X Acceleration (m/s2)", "Y Acceleration (m/s2)", "Z Acceleration (m/s2)"]
-    tab10 = ttk.Frame(notebook)
-    plot_sensors(tab10, [dynamics[0:9], sensed[0:9], kalman[0:9]], ts, tf, dynamics_plot_names)
+    legend = ["T", "S", "K"]
+    create_graph_set(tab10, [true_dynamics[0:9], sensed_dynamics[0:9], kalman_dynamics[0:9]], ts, tf, dynamics_plot_names, 9, legend)
     notebook.add(tab10, text="| Sensed Dynamics |")
     
     # Sensors
+    tab11 = ttk.Frame(notebook)
     dynamics_plot_names = ["Pitch (degrees)", "Yaw (degrees)", "Roll (degrees)", 
                                       "Pitch Rate (deg/s)", "Yaw Rate (deg/s)", "Roll Rate (deg/s)", 
                                       "Pitch Acceleration (deg/s2)", "Yaw Acceleration (deg/s2)", "Roll Acceleration (deg/s2)"]
-    tab11 = ttk.Frame(notebook)
-    plot_sensors(tab11, [[x * RAD2DEG for x in dynamics[9:18]], [x * RAD2DEG for x in sensed[9:18]], [x * RAD2DEG for x in kalman[9:18]]], ts, tf, dynamics_plot_names)
+    legend = ["T", "S", "K"]
+    create_graph_set(tab11, [[x * RAD2DEG for x in true_dynamics[9:18]], [x * RAD2DEG for x in sensed_dynamics[9:18]], [x * RAD2DEG for x in kalman_dynamics[9:18]]], ts, tf, dynamics_plot_names, 9, legend)
     notebook.add(tab11, text="| Sensed Rotations |")
     
-    
+    '''
+    To add new graphs use the following format:
+
+    tabn = ttk.Frame(notebook)
+    names = ["list of all the names you want the graphs to be titled, one for each graph"]
+    create_graph_set(tabn, the data itself, ts, tf, names, number of graphs)
+    notebook.add(tabn, text="| tab title |")
+    '''
+
     notebook.pack(expand=1.25, fill="both", padx=10, pady=10)
     root.mainloop()

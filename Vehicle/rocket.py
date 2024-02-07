@@ -5,7 +5,7 @@ import Vehicle.rocketConstants
 from Vehicle.components import *
 from scipy.integrate import cumtrapz
 from scipy.interpolate import interp1d
-from Vehicle.sensors import * 
+from Vehicle.sensors import *
 
 
 class Rocket:
@@ -19,27 +19,29 @@ class Rocket:
         self.mass = Vehicle.rocketConstants.ROCKET_MASS_TOTAL  # Rocket Starts Fully Fueled
         self.massHistory = np.empty(shape=(0))
 
-        # Pull Components List
+        # Pull Components List and Build rocket
         self.components = self.build_rocket(Vehicle.rocketConstants.COMPONENTS)
 
-        # Cg and Cp locations, measured from top of rocket
+        # Find Cg and Cp locations, measured from top of rocket
         self.com = self.calculate_com()
         self.cop = Vehicle.rocketConstants.Cp
 
         # Calculate Moment of Inertia Tensor
         self.I_history = []
-        self.update_rocket()
+        self.update_fuels()
         self.I_history = []
+        
+        # Initialize the rocket's rotation matrix
         self.R = None
         
-        # Sensors
+        # Create Sensors
         self.accelerometer = Accelerometer()
         self.gyroscope = Gyroscope()
         self.gps = GPS()
         self.magnetometer = Magnetometer()
 
     def build_rocket(self, components):
-        ''' Take in list of parts from rocket constants and build rocket'''
+        ''' Takes in list of parts from rocket constants and build rocket'''
         new_components = []
         mass_check = 0
         for component in components:
@@ -90,9 +92,17 @@ class Rocket:
             total_mass  # calculate overall center-of-mass
         return rocket_center_of_mass
 
-    def update_rocket(self):
+    def update_rocket(self, throttle, pos_x, pos_y, t):
         ''' Run all the functions needed to update the rocket at a new timestep'''
-        
+        self.update_fuels()
+        self.engine.save_throttle(throttle)
+        self.engine.save_posX(pos_x)
+        self.engine.save_posY(pos_y)
+        self.engine.save_thrust(self.engine.get_thrust(t, throttle))
+    
+    def update_fuels(self):
+        """ Remove the fuel used in the timestep from the tanks """
+        # Calulate the amount of fuel remaining
         percent_fuel_remaining = 1 - (self.engine.full_mass - self.engine.mass) / (self.engine.full_mass - self.engine.drymass)
         
         # Update fuels
@@ -103,25 +113,19 @@ class Rocket:
                 new_volume = percent_fuel_remaining * math.pi * (component.outer_radius ** 2 - component.original_inner_radius ** 2) * component.length
                 component.current_inner_radius = math.sqrt(component.outer_radius ** 2 - (new_volume / (math.pi * component.length)))
         
+        # Save necessary information
         self.update_mass()
-        self.update_I()
-        
+        self.update_I()    
+    
     def update_mass(self):
-        """ Outputs the expected mass based on it
-
-        Inputs:
-            throttleHistory = history of throttle
-
-        Returns:
-            mass = mass of rocket at current query time
-
+        """ Update the rocket mass
         """
         self.engine.mass -= (self.engine.thrust * self.engine.throttle / self.engine.exhaust_velocity) * self.dt
         self.mass = self.mass_noEngine + self.engine.mass
         self.massHistory = np.append(self.massHistory, self.mass)
 
     def update_I(self):
-        """ Function that is called to update the moment of inertia of the rocket at the current timestep"""
+        """ Update the moment of inertia of the rocket at the current timestep"""
         overall_com = self.calculate_com()
         
         first_pass = False
@@ -152,14 +156,14 @@ class Rocket:
         self.I_history.append(self.I)      
         
     def find_wind_force(self, wind, rho):
-        """ Outputs the expected wind force vector [fx, fy, fz]
+        """ Outputs the expected wind force vector [fx, fy, fz] based on the current state
 
         Inputs:
             Wind in the rocket frame
             rho density of air
 
         Returns:
-            force - wind force vector in rf
+            force - wind force vector in rocket frame
 
         """
         alpha = np.arccos(np.dot(wind, [0, 0, 1]) / np.linalg.norm(wind))

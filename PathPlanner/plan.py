@@ -15,22 +15,6 @@ class PlannedTrajectory:
         self.decent_duration = tf - self.ascent_duration
         self.trajectory = self.xyz_trajectory()
 
-    def better(self, t):
-        if t <= self.ascent_duration - ((self.landing_timing_proportion - 1) * self.decent_duration / self.landing_timing_proportion):
-            h = (self.max_altitude - self.max_altitude * (((self.ascent_duration + ((self.landing_timing_proportion - 1) * self.decent_duration / self.landing_timing_proportion)) - self.ascent_duration) / (self.decent_duration))**3)
-            b = (self.ascent_duration + self.decent_duration)
-            a = h / ((b - (self.ascent_duration + ((self.landing_timing_proportion - 1) * self.decent_duration / self.landing_timing_proportion)))**3 - (b - (self.ascent_duration + self.decent_duration))**3)
-            return a * (t)**3
-        elif t <= self.ascent_duration:
-            return self.max_altitude + self.max_altitude * ((t - self.ascent_duration) / self.ascent_duration)**3
-        elif t <= self.ascent_duration + ((self.landing_timing_proportion - 1) * self.decent_duration / self.landing_timing_proportion):
-            return self.max_altitude - self.max_altitude * ((t - self.ascent_duration) / (self.decent_duration))**3
-        else:
-            h = (self.max_altitude - self.max_altitude * (((self.ascent_duration + ((self.landing_timing_proportion - 1) * self.decent_duration / self.landing_timing_proportion)) - self.ascent_duration) / (self.decent_duration))**3)
-            b = (self.ascent_duration + self.decent_duration)
-            a = h / ((b - (self.ascent_duration + ((self.landing_timing_proportion - 1) * self.decent_duration / self.landing_timing_proportion)))**3 - (b - (self.ascent_duration + self.decent_duration))**3)
-            return a * (b - t)**3
-        
     def sin_trajectory(self, t):
         return (self.max_altitude * (np.sin((2 * t * np.pi / self.tf) - (np.pi / 2)) + 1) / 2) + 0.1
         

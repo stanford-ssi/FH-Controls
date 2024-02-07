@@ -115,8 +115,8 @@ def create_gui(sim, planned_trajectory, trajectory, ts, tf):
 
     #Get data
     true_dynamics = pull_dynamics(trajectory, ts, tf)
-    sensed_dynamics = pull_dynamics(sim.sensed_state, ts, tf)
-    kalman_dynamics = pull_dynamics(sim.kalman_state, ts, tf)
+    sensed_dynamics = pull_dynamics(sim.sensed_state_history, ts, tf)
+    kalman_dynamics = pull_dynamics(sim.kalman_state_history, ts, tf)
 
     # Altitude vs Time
     tab0 = ttk.Frame(notebook)
@@ -126,7 +126,7 @@ def create_gui(sim, planned_trajectory, trajectory, ts, tf):
 
     # Position Error
     tab1 = ttk.Frame(notebook)
-    position_error = [sim.position_error_history[:,0], sim.position_error_history[:,1], sim.position_error_history[:,2]]
+    position_error = [sim.error_history[:,0], sim.error_history[:,1], sim.error_history[:,2]]
     error_names = ["X Error (m)", "Y Error (m)", "Z Error (m)"]
     legend = ["T", "T", "T"]
     create_graph_set(tab1, position_error, ts, tf, error_names, 3, legend)
@@ -134,7 +134,7 @@ def create_gui(sim, planned_trajectory, trajectory, ts, tf):
 
     # Rotation Error
     tab2 = ttk.Frame(notebook)
-    rotation_error = [sim.rotation_error_history[:,0] * RAD2DEG, sim.rotation_error_history[:,1] * RAD2DEG, sim.rotation_error_history[:,2] * RAD2DEG]
+    rotation_error = [sim.error_history[:,6] * RAD2DEG, sim.error_history[:,7] * RAD2DEG, sim.error_history[:,8] * RAD2DEG]
     rot_error_names = ["Pitch Error (degrees)", "Yaw Error (degrees)", "Roll Error (degrees)"]
     legend = ["T", "T", "T"]
     create_graph_set(tab2, rotation_error, ts, tf, rot_error_names, 3, legend)
@@ -194,7 +194,7 @@ def create_gui(sim, planned_trajectory, trajectory, ts, tf):
     # Landing
     tab9 = ttk.Frame(notebook)
     if sim.landed == True:
-        plot_landing_graph(tab9, "Landing Position", sim.position_error_history[-1,0], sim.position_error_history[-1, 1], "X Position (m)", "Y Position (m)")
+        plot_landing_graph(tab9, "Landing Position", sim.error_history[-1,0], sim.error_history[-1, 1], "X Position (m)", "Y Position (m)")
         notebook.add(tab9, text="| Landing |")
         
     # Sensors

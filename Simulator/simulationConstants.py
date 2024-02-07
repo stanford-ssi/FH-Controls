@@ -9,6 +9,7 @@ WIND = [5, 5, 0.25] # Sigma values for wind
 FINAL_TIME = 20
 TIMESTEP = 0.1
 TARGET_ALTITUDE = 50 #meters
+GROUND_OFFSET = 0.1 # shift the trajectory up by how many meters? (Used to make the controller play nice)
 
 # Physical Constants
 GRAVITY = 9.81 # m/s^2

@@ -16,15 +16,16 @@ from scipy.spatial.transform import Rotation
 class Simulation:
     """ Class Representing the Simulation and associated data"""
     def __init__(self, timefinal, simulation_timestep, starting_state, wind, planned_trajectory):
-        # Create Engine Object inside Rocket
-        self.state_previous = starting_state
-        self.state = roll_injection(starting_state)
-        self.statedot_previous = np.zeros(len(self.state))
+        
+        # Create Rocket Object
         self.rocket = Vehicle.rocket.Rocket(simulation_timestep)
+        
+        # States and Histories
+        self.state = roll_injection(starting_state)
+        self.state_previous = starting_state
+        self.statedot_previous = np.zeros(12)
         self.ideal_trajectory = planned_trajectory
-        self.position_error_history = np.array([[0,0,0]]) 
-        self.rotation_error_history = np.array([[0,0,0]])
-        self.u = np.array([[0,0,0]])
+        self.error_history = np.empty((0,12))
         
         # Simulation Variables
         self.ts = simulation_timestep
@@ -35,19 +36,20 @@ class Simulation:
         self.landing_violation = None
         
         # Initialize situation
-        self.wind_history = np.array([[0,0,0]]) 
+        self.wind_history = np.empty((0,3))
         self.base_wind = np.array([np.random.normal(0, wind[0]), np.random.normal(0, wind[1]), np.random.normal(0, wind[2])])
         self.current_wind = self.base_wind
         
         # Preform initial controller calculations
+        self.u = np.empty((0,3))
         self.linearized_x = np.array([0,0,0,0,0,0,0,0,0,0,0,0])
         self.linearized_u = np.array([0, 0, g])
         self.A_orig = compute_A(self.linearized_x, self.linearized_u, self.rocket, self.ts)
         self.B_orig = compute_B(self.linearized_x, self.linearized_u, self.rocket, self.ts)
         
         # Sensors:
-        self.sensed_state = np.array([[0,0,0,0,0,0,0,0,0,0,0,0]])
-        self.kalman_state = np.array([[0,0,0,0,0,0,0,0,0,0,0,0]])
+        self.sensed_state_history = np.empty((0,12))
+        self.kalman_state_history = np.empty((0,12))
         self.kalman_P = np.eye(12)
 
     def propogate(self):
@@ -109,7 +111,7 @@ class Simulation:
     def check_landing(self, state, t):
         """ Check if the landing was valid"""
         # Check if below threshold altitude
-        if state[2] < self.rocket.engine.length + 0.1 and t > 0.75 * self.tf:
+        if state[2] < 0.5 and t > 0.75 * self.tf:
             # Check Z speed
             if abs(state[5]) < MAX_Z_SPEED:
                 # Check XY speed
@@ -142,10 +144,7 @@ class Simulation:
               
             # Determine wind at this moment in time
             self.current_wind = wind_randomness(self.base_wind, self.current_wind)
-            if t == 0:
-                self.wind_history = np.array([self.current_wind])
-            else:
-                self.wind_history = np.append(self.wind_history, [self.current_wind], axis=0)
+            self.wind_history = np.vstack([self.wind_history, self.current_wind])
             
             # Pre Control Work - Rotate State Matrices into current frame                 
             A, B = update_linearization(self.A_orig, self.B_orig, rocket.R) 
@@ -159,31 +158,13 @@ class Simulation:
                                             rocket.accelerometer.read_velocity(state, self.statedot_previous[3:6]), 
                                             rocket.magnetometer.reading(state), 
                                             rocket.gyroscope.read_velocity(state, self.statedot_previous[9:12]))).reshape((1, 12))
-            kalman_state, self.kalman_P = kalman_filter(self.kalman_state[-1], self.statedot_previous[3:6], sensed_state[0], self.A_orig, self.B_orig, self.ts, rocket.engine.length, P=self.kalman_P)
-            
-            if t == 0:
-                self.sensed_state[0] = sensed_state
-                self.kalman_state[0] = kalman_state
-            else:
-                self.sensed_state = np.append(self.sensed_state, sensed_state, axis=0)
-                self.kalman_state = np.append(self.kalman_state, kalman_state[None, :], axis=0)
-            
-            
-            positional_state = state[0:6]
-            rotational_state = state[6:12]
-            # positional_state = kalman_state[0:6]
-            # rotational_state = kalman_state[6:12]
+            kalman_state, self.kalman_P = kalman_filter(self.kalman_state_history[-1] if t > 0 else np.zeros(len(state)), self.statedot_previous[3:6], sensed_state[0], self.A_orig, self.B_orig, self.ts, rocket.engine.length, P=self.kalman_P)
+            self.sensed_state_history = np.vstack([self.sensed_state_history, sensed_state])
+            self.kalman_state_history = np.vstack([self.kalman_state_history, kalman_state])            
             
             # Calculate Errors
-            position_error = positional_state - ideal_trajectory[self.current_step]
-            rotational_error = rotational_state - [0, 0, 0, 0, 0, 0]
-            state_error = np.concatenate((position_error, rotational_error), axis=0)
-            if t == 0:
-                self.position_error_history = position_error.reshape((1, 6))
-                self.rotation_error_history = rotational_error.reshape((1, 6))
-            else:
-                self.position_error_history = np.append(self.position_error_history, position_error.reshape((1, 6)), axis=0)
-                self.rotation_error_history = np.append(self.rotation_error_history, rotational_error.reshape((1, 6)), axis=0)        
+            state_error = state - ideal_trajectory[self.current_step]
+            self.error_history = np.vstack([self.error_history, state_error])
 
             # Call Controller
             U = control_rocket(self.K, state_error, self.linearized_u)
@@ -211,10 +192,6 @@ class Simulation:
             
             # Check for landing
             self.check_landing(state, t)
-        
-        if t == 0:
-            self.jacobian_error = 0
-            self.statedot_previous = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
         
         self.statedot_previous = full_dynamics(state, rocket, self.current_wind, self.ts, t)
         return self.statedot_previous

@@ -1,6 +1,6 @@
-#Everything ran and it seems to be fine?
 import numpy as np
 import matplotlib.pyplot as plt
+from Simulator.simulationConstants import *
 
 class PlannedTrajectory:
     def __init__(self, max_altitude, tf, ts):
@@ -16,14 +16,14 @@ class PlannedTrajectory:
         self.trajectory = self.xyz_trajectory()
 
     def sin_trajectory(self, t):
-        return (self.max_altitude * (np.sin((2 * t * np.pi / self.tf) - (np.pi / 2)) + 1) / 2) + 0.1
+        return (self.max_altitude * (np.sin((2 * t * np.pi / self.tf) - (np.pi / 2)) + 1) / 2) + GROUND_OFFSET
         
     def xyz_trajectory(self):
         trajectory = [[0, 0, self.sin_trajectory(t)] for t in self.time]
         velocity = [[(trajectory[i+1][j] - trajectory[i][j]) / self.ts for j in range(len(trajectory[0]))] for i in range(len(trajectory)-1)]
         velocity.insert(0, [0,0,0])
-        result = np.concatenate((trajectory, velocity), axis=1)
-
+        rotations = [[0, 0, 0, 0, 0, 0] for t in self.time]
+        result = np.concatenate((trajectory, velocity, rotations), axis=1)
         return np.array(result)
     
     def plot_trajectory(self):

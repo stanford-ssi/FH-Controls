@@ -3,6 +3,7 @@ from GNC.controlConstants import *
 
 def kalman_filter(x, u, Z, A, B, dt, engine_length, P):
     """ Kalman filter"""
+    
     # Calculate Process Noise Matrix
     Q = np.eye(12) * 0.1
 

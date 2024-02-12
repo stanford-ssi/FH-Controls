@@ -10,7 +10,7 @@ MAX_THROTTLE_RATE = 0.5 # throttles per second, ie 5 --> 500 percent per second
 MAX_POS_RATE = 0.01# m per second - actuator speed in direction with a bit of saftey margin - should be 0.0092
 
 # Linearization
-STEP_SIZE
+STEP_SIZE = 0.001
 
 # LQR Controller Penalties for regular flight
 Q_X = 0.35

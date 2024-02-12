@@ -17,9 +17,9 @@ def actuator_error_injection(pos_x, pos_y, throttle):
     - modified throttle
     
     """
-    pos_x = pos_x + (random.randint(-10, 10) * 0.1 * RANDOMIZED_ERROR_POS) + CONSTANT_ERROR_POS
-    pos_y = pos_y + (random.randint(-10, 10) * 0.1 * RANDOMIZED_ERROR_POS) + CONSTANT_ERROR_POS
-    throttle = throttle + (random.randint(-10, 10) * 0.1 * RANDOMIZED_ERROR_THROTTLE) + CONSTANT_ERROR_THROTTLE
+    pos_x = np.random.normal(pos_x + CONSTANT_ERROR_POS, RANDOMIZED_ERROR_POS_SIGMA)
+    pos_y = np.random.normal(pos_y + CONSTANT_ERROR_POS, RANDOMIZED_ERROR_POS_SIGMA)
+    throttle = np.random.normal(throttle + CONSTANT_ERROR_THROTTLE, RANDOMIZED_ERROR_THROTTLE_SIGMA)
     return pos_x, pos_y, throttle
 
 def roll_injection(state):
@@ -43,7 +43,7 @@ def wind_randomness(base_wind, current_wind):
         
     if (base_wind==current_wind).all():
         if random.random() > WIND_CHANCE_OF_CHANGE:
-            multiplier = 1.5 * random.random()
+            multiplier = WIND_MULTIPLIER * random.random()
             return base_wind * multiplier
         else:
             return base_wind

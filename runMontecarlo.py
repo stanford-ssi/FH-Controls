@@ -10,14 +10,17 @@ planned_trajectory = PlannedTrajectory(TARGET_ALTITUDE, FINAL_TIME, TIMESTEP).tr
 sims = []
 trajectories = []
 number = 20
-
+num_landed = 0
 with alive_bar(number) as bar:
     for i in range(number):
         sim = Simulation(FINAL_TIME, TIMESTEP, INITIAL_STATE, WIND, planned_trajectory)
         trajectory = sim.propogate()
         sims.append(sim)
         trajectories.append(trajectory)
+        if sim.landed == True:
+                num_landed += 1  
         bar()
+print(num_landed/number)
 
 # Graphs
 create_group_gui(sims, planned_trajectory, trajectories, TIMESTEP, FINAL_TIME)

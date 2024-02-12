@@ -65,6 +65,7 @@ def full_dynamics(state, rocket, wind, dt, t):
     """ These are the dynamics used during simulation. It is the full dynamics including wind.
         
         Inputs:
+        - state in gf
         - rocket object
         - wind vector in global frame (1x3)
         - timestep length
@@ -103,7 +104,7 @@ def full_dynamics(state, rocket, wind, dt, t):
     R_inv = np.linalg.inv(R)
 
     # Wind rotation into rocket frame
-    wind_rf = np.dot(R, wind + v)
+    wind_rf = np.dot(R, wind + np.dot(R, v))
     wind_force = rocket.find_wind_force(wind_rf, rho)
     wind_moment = rocket.find_wind_moment(wind_rf, rho)
 

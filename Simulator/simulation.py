@@ -23,9 +23,9 @@ class Simulation:
         # States and Histories
         self.state = roll_injection(starting_state)
         self.state_previous = starting_state
-        self.statedot_previous = np.zeros(12)
+        self.statedot_previous = np.zeros(len(starting_state))
         self.ideal_trajectory = planned_trajectory
-        self.error_history = np.empty((0,12))
+        self.error_history = np.empty((0,len(starting_state)))
         
         # Simulation Variables
         self.ts = simulation_timestep
@@ -36,20 +36,20 @@ class Simulation:
         self.landing_violation = None
         
         # Initialize situation
-        self.wind_history = np.empty((0,3))
+        self.wind_history = np.empty((0,len(wind)))
         self.base_wind = np.array([np.random.normal(0, wind[0]), np.random.normal(0, wind[1]), np.random.normal(0, wind[2])])
         self.current_wind = self.base_wind
         
         # Preform initial controller calculations
-        self.u = np.empty((0,3))
+        self.u_history = np.empty((0,3))
         self.linearized_x = np.array([0,0,0,0,0,0,0,0,0,0,0,0])
         self.linearized_u = np.array([0, 0, g])
         self.A_orig = compute_A(self.linearized_x, self.linearized_u, self.rocket, self.ts)
         self.B_orig = compute_B(self.linearized_x, self.linearized_u, self.rocket, self.ts)
         
         # Sensors:
-        self.sensed_state_history = np.empty((0,12))
-        self.kalman_state_history = np.empty((0,12))
+        self.sensed_state_history = np.empty((0,len(starting_state)))
+        self.kalman_state_history = np.empty((0,len(starting_state)))
         self.kalman_P = np.eye(12)
 
     def propogate(self):
@@ -76,7 +76,7 @@ class Simulation:
 
         # Propogate given ODE, stop when rocket crashes as indicated by this here event function
         def event(t,y,r,it,tt):
-            if t < 100 * ts:
+            if t < ts: # Prevent from thinking it's crashed when sitting on ground on first time step
                 return 1
             else:
                 if self.landed == True:
@@ -148,10 +148,7 @@ class Simulation:
             
             # Pre Control Work - Rotate State Matrices into current frame                 
             A, B = update_linearization(self.A_orig, self.B_orig, rocket.R) 
-            if (t / self.tf) < 0.8:
-                self.K = compute_K_flight(len(self.state), A, B)
-            else:
-                self.K = compute_K_landing(len(self.state), A, B)
+            self.K = compute_K_flight(len(self.state), A, B)
 
             # Sense the state from sensors
             sensed_state = np.concatenate((rocket.gps.reading(state), 
@@ -163,11 +160,12 @@ class Simulation:
             self.kalman_state_history = np.vstack([self.kalman_state_history, kalman_state])            
             
             # Calculate Errors
-            state_error = state - ideal_trajectory[self.current_step]
+            state_error = kalman_state - ideal_trajectory[self.current_step]
             self.error_history = np.vstack([self.error_history, state_error])
 
             # Call Controller
             U = control_rocket(self.K, state_error, self.linearized_u)
+            self.u_history = np.vstack([self.u_history, U])
             
             # Convert desired accelerations to throttle and gimbal angles
             pos_x, pos_y, throttle = accelerations_2_actuator_positions(U, rocket, t)

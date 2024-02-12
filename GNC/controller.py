@@ -89,55 +89,6 @@ def compute_K_flight(len_state, A, B):
     
     return K
 
-def compute_K_landing(len_state, A_orig, B_orig):
-    """Compute the K matrix for the landing phase of the mission using lqr. The controller constants are more constrained than the flight phase.
-    
-    Inputs:
-    - length of state
-    - A matrix
-    - B matrix 
-    """
-    
-    linearized_u = np.array([0, 0, g])
-            
-    # Remove Roll Columns and Rows
-    A = np.delete(A_orig, 11, 0)
-    A = np.delete(A, 11, 1)
-    A = np.delete(A, 8, 0)
-    A = np.delete(A, 8, 1)
-    B = np.delete(B_orig, 11, 0)
-    B = np.delete(B, 8, 0)
-            
-    # Q and R
-    Q = np.identity(len_state - 2 + 3) #Minus 2 to remove roll stuff plus 3 to get integral control
-    R = np.identity(len(linearized_u))
-
-    Q[0][0] = 1 / (Q_X_l ** 2)
-    Q[1][1] = 1 / (Q_Y_l ** 2)
-    Q[2][2] = 1 / (Q_Z_l ** 2)
-    Q[3][3] = 1 / (Q_VX_l ** 2)
-    Q[4][4] = 1 / (Q_VY_l ** 2)
-    Q[5][5] = 1 / (Q_VZ_l ** 2)
-    Q[6][6] = 1 / (Q_PIT_l ** 2)
-    Q[7][7] = 1 / (Q_YAW_l ** 2)
-    Q[8][8] = 1 / (Q_VPIT_l ** 2)
-    Q[9][9] = 1 / (Q_VYAW_l ** 2)
-    Q[10][10] = 1 / (Q_X_l ** 2)
-    Q[11][11] = 1 / (Q_Y_l ** 2)
-    Q[12][12] = 1 / (Q_Z_l ** 2)
-    
-    R[0][0] = 1 / (R_X_l ** 2)
-    R[1][1] = 1 / (R_Y_l ** 2)
-    R[2][2] = 1 / (R_T_l ** 2)
-            
-    # Control
-    C = np.append(np.identity(3), np.zeros((3, 7)), axis=1) # C is of the form y = Cx, where x is the state and y is the steady state error we care about - in this case just [x y z]
-    K,S,E = control.lqr(A, B, Q, R, integral_action=C) # The K that this spits out has the additional 3 integral terms tacked onto the end, so must add errorx, y, z onto end of state error when solving for U
-    K = np.insert(K, 8, 0, axis=1)
-    K = np.insert(K, 11, 0, axis=1)
-    
-    return K
-
 def compute_A(state, u, rocket, dt):
     """ Compute Jacobian for the A matrix (State dot wrt State)
     
@@ -147,7 +98,7 @@ def compute_A(state, u, rocket, dt):
     - rocket object
     - timestep length
     """
-    h = 0.001
+    h = STEP_SIZE
     jacobian = np.zeros((len(state), len(state)))
     for i in range(len(state)):
         state_plus = deepcopy(state).astype(float)
@@ -168,7 +119,7 @@ def compute_B(state, linearized_u, rocket, dt):
     - rocket object
     - timestep length
     """
-    h = 0.001
+    h = STEP_SIZE
     jacobian = np.zeros((len(linearized_u), len(state)))
     for i in range(len(linearized_u)):
         u_plus = deepcopy(linearized_u).astype(float)

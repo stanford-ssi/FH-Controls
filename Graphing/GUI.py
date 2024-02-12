@@ -38,8 +38,7 @@ def pull_dynamics(trajectory, ts, tf):
     return [x_pos, y_pos, z_pos, x_vel, y_vel, z_vel, x_acc, y_acc, z_acc, theta_x, theta_y, theta_z, omega_x, omega_y, omega_z, x_alpha, y_alpha, z_alpha]
 
 
-def create_graph_set(tab, var, ts, tf, names, num_graphs, legend):
-    
+def create_graph_set(tab, var, ts, tf, names, num_graphs, legend, multiple_on_one_graph=False):
     #this figures out how to chunk the graphs to make them easily visible
     if math.sqrt(num_graphs).is_integer(): 
         num_rows, num_cols = int(math.sqrt(num_graphs)), int(math.sqrt(num_graphs))
@@ -57,7 +56,11 @@ def create_graph_set(tab, var, ts, tf, names, num_graphs, legend):
     try:
         for i in range(len(names)):
             var_ax = plt.subplot(gs[i])
-            plot_graph(var[i], ts, tf, var_ax, legend[i], names[i])
+            if multiple_on_one_graph == True:
+                for j in range(len(var)):
+                    plot_graph(var[j], ts, tf, var_ax, legend[i], names[i])
+            else:
+                plot_graph(var[i], ts, tf, var_ax, legend[i], names[i])
     except:
         for v in range(len(var)):
             for i in range(len(names)):
@@ -121,7 +124,7 @@ def create_gui(sim, planned_trajectory, trajectory, ts, tf):
     # Altitude vs Time
     tab0 = ttk.Frame(notebook)
     legend = ["T"]
-    create_graph_set(tab0, [planned_trajectory[:,2], trajectory[:,2], sim.rocket.engine.throttle_history * 10], ts, tf, ["Altitude"], 1, legend)
+    create_graph_set(tab0, [planned_trajectory[:,2], trajectory[:,2]], ts, tf, ["Altitude"], 1, legend, multiple_on_one_graph=True)
     notebook.add(tab0, text="| ALTITUDE |")
 
     # Position Error

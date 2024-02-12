@@ -130,14 +130,14 @@ def create_group_gui(sims, planned_trajectory, trajectories, ts, tf):
     notebook.add(tab0, text="| ALTITUDE |")
 
     # Position Error
-    position_error = [[sim.position_error_history[:,0] for sim in sims], [sim.position_error_history[:,1] for sim in sims], [sim.position_error_history[:,2] for sim in sims]]
+    position_error = [[sim.error_history[:,0] for sim in sims if sim.landed == True], [sim.error_history[:,1] for sim in sims if sim.landed == True], [sim.error_history[:,2] for sim in sims if sim.landed == True]]
     error_names = ["X Error (m)", "Y Error (m)", "Z Error (m)"]
     tab1 = ttk.Frame(notebook)
     create_3_graph(tab1, position_error, ts, tf, error_names, "Position Error")
     notebook.add(tab1, text="| Position Error |")
 
     # # Rotation Error
-    rotation_error = [[sim.rotation_error_history[:,0] * RAD2DEG for sim in sims], [sim.rotation_error_history[:,1] * RAD2DEG for sim in sims], [sim.rotation_error_history[:,2] * RAD2DEG for sim in sims]]
+    rotation_error = [[sim.error_history[:,0] * RAD2DEG for sim in sims if sim.landed == True], [sim.error_history[:,1] * RAD2DEG for sim in sims if sim.landed == True], [sim.error_history[:,2] * RAD2DEG for sim in sims if sim.landed == True]]
     rot_error_names = ["Pitch Error (degrees)", "Yaw Error (degrees)", "Roll Error (degrees)"]
     tab2 = ttk.Frame(notebook)
     create_3_graph(tab2, rotation_error, ts, tf, rot_error_names, "Rotation Error")
@@ -192,12 +192,12 @@ def create_group_gui(sims, planned_trajectory, trajectories, ts, tf):
     for sim in sims:
         if sim.landed==True:
             num_landed+=1
-    landing_graph(tab9, "Landing Position", [sim.position_error_history[-1,0] for sim in sims if sim.landed==True], [sim.position_error_history[-1, 1] for sim in sims if sim.landed==True], "X Position (m)", "Y Position (m)", num_landed, len(sims))
+    landing_graph(tab9, "Landing Position", [sim.error_history[-1,0] for sim in sims if sim.landed==True], [sim.error_history[-1, 1] for sim in sims if sim.landed==True], "X Position (m)", "Y Position (m)", num_landed, len(sims))
     notebook.add(tab9, text="| Landing |")
     
     # U
     tab10 = ttk.Frame(notebook)
-    Us = [[sim.u[:,0] for sim in sims], [sim.u[:,1] for sim in sims], [sim.u[:,2] for sim in sims]]
+    Us = [[sim.u_history[:,0] for sim in sims if sim.landed == True], [sim.u_history[:,1] for sim in sims if sim.landed == True], [sim.u_history[:,2] for sim in sims if sim.landed == True]]
     control_names = ["UX", "UY", "UZ"]
     for sim in sims:
         if sim.landed==True:

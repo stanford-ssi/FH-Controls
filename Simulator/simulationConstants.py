@@ -9,7 +9,7 @@ WIND = [5, 5, 0.25] # Sigma values for wind
 FINAL_TIME = 20
 TIMESTEP = 0.1
 TARGET_ALTITUDE = 50 #meters
-GROUND_OFFSET = 0.1 # shift the trajectory up by how many meters? (Used to make the controller play nice)
+GROUND_OFFSET = 0.05 # shift the trajectory up by how many meters? (Used to make the controller play nice)
 
 # Physical Constants
 GRAVITY = 9.81 # m/s^2
@@ -19,20 +19,23 @@ RAD2DEG = 57.2958
 # Randomized Wind Variables
 WIND_CHANCE_OF_CHANGE = 0.01
 WIND_CHANGE_LENGTH = 0.96
+WIND_MULTIPLIER = 1.5
 
 # Disturbance for engine position and throttle
-RANDOMIZED_ERROR_POS = 0.0001 # meter
-CONSTANT_ERROR_POS = 0.001 # meter
-RANDOMIZED_ERROR_THROTTLE = 0.01
-CONSTANT_ERROR_THROTTLE = 0.01
+RANDOMIZED_ERROR_POS_SIGMA = 0.0001 # meter
+CONSTANT_ERROR_POS = 0.0 # meter
+RANDOMIZED_ERROR_THROTTLE_SIGMA = 0.01
+CONSTANT_ERROR_THROTTLE = 0.0
 
 # Random Roll Injection
 ROLL_SIGMA = 0.5
 ROLL_MU = 0
 
 # Landing Constraints
+THRESHOLD_ALTITUDE = 0.5
+THRESHOLD_TIME = 0.75 * FINAL_TIME
 MAX_RADIUS_ERROR = 1 # m
-MAX_Z_SPEED = 0.3 # m/s
-MAX_XY_SPEED = 0.05 # m/s
+MAX_Z_SPEED = 1 # m/s
+MAX_XY_SPEED = 0.1 # m/s
 MAX_ROTATION = 0.1 # rad
 MAX_ROTATION_SPEED = 0.02 # rad/s

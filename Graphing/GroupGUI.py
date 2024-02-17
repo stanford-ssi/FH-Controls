@@ -137,7 +137,7 @@ def create_group_gui(sims, planned_trajectory, trajectories, ts, tf):
     notebook.add(tab1, text="| Position Error |")
 
     # # Rotation Error
-    rotation_error = [[sim.error_history[:,0] * RAD2DEG for sim in sims if sim.landed == True], [sim.error_history[:,1] * RAD2DEG for sim in sims if sim.landed == True], [sim.error_history[:,2] * RAD2DEG for sim in sims if sim.landed == True]]
+    rotation_error = [[sim.error_history[:,6] * RAD2DEG for sim in sims if sim.landed == True], [sim.error_history[:,7] * RAD2DEG for sim in sims if sim.landed == True], [sim.error_history[:,8] * RAD2DEG for sim in sims if sim.landed == True]]
     rot_error_names = ["Pitch Error (degrees)", "Yaw Error (degrees)", "Roll Error (degrees)"]
     tab2 = ttk.Frame(notebook)
     create_3_graph(tab2, rotation_error, ts, tf, rot_error_names, "Rotation Error")

@@ -9,7 +9,7 @@ from PathPlanner.plan import PlannedTrajectory
 planned_trajectory = PlannedTrajectory(TARGET_ALTITUDE, FINAL_TIME, TIMESTEP).trajectory
 sims = []
 trajectories = []
-number = 20
+number = 100
 num_landed = 0
 with alive_bar(number) as bar:
     for i in range(number):
@@ -19,6 +19,8 @@ with alive_bar(number) as bar:
         trajectories.append(trajectory)
         if sim.landed == True:
                 num_landed += 1  
+        else:
+                print(sim.landing_violation)
         bar()
 print(num_landed/number)
 

@@ -6,6 +6,7 @@ from Vehicle.components import *
 from scipy.integrate import cumtrapz
 from scipy.interpolate import interp1d
 from Vehicle.sensors import *
+from Simulator.simulationConstants import *
 
 
 class Rocket:
@@ -37,7 +38,7 @@ class Rocket:
         # Create Sensors
         self.accelerometer = Accelerometer()
         self.gyroscope = Gyroscope()
-        self.gps = GPS()
+        self.gps = GPS(INITIAL_STATE)
         self.magnetometer = Magnetometer()
 
     def build_rocket(self, components):

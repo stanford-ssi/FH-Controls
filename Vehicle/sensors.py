@@ -58,7 +58,7 @@ class Gyroscope():
     def __init__(self):
         self.sigma = GYROSCOPE_SIGMA
         self.mu = GYROSCOPE_MU
-        self.dt = GYROSCOPE_DT
+        self.dt = GYROSCOPE_UPDATE_FREQ
     
     def reading(self, real_acc):
         """ Simulates a reading from the gyroscope
@@ -143,11 +143,17 @@ class Barometer():
     
 class GPS():
     """ GPS Object """
-    def __init__(self):
+    def __init__(self, state):
         self.sigma = GPS_SIGMA
         self.mu = GPS_MU
+        self.update_time = 1 / GPS_UPDATE_FREQ
+        self.data = self.update_reading(state[0:3])
+        self.last_measurement_t = 0
         
-    def reading(self, state):
+    def update_reading(self, state):
+        return np.array([np.random.normal(x + self.mu, self.sigma) for x in state[0:3]])
+        
+    def reading(self, state, t):
         """ Simulates a reading from the GPS
         
         Inputs:
@@ -157,4 +163,9 @@ class GPS():
         - position vector with x y and z (1x3)  
         
         """
-        return np.array([np.random.normal(x + self.mu, self.sigma) for x in state[0:3]])
+        if t > self.last_measurement_t + self.update_time:
+            self.last_measurement_t = t
+            self.data = self.update_reading(state)
+            return self.data
+        else:
+            return self.data

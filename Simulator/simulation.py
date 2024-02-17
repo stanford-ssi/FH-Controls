@@ -12,6 +12,7 @@ from Simulator.errorInjection import *
 from Simulator.simulationConstants import GRAVITY as g
 from Simulator.simulationConstants import RHO as rho
 from scipy.spatial.transform import Rotation
+import copy
 
 class Simulation:
     """ Class Representing the Simulation and associated data"""
@@ -22,7 +23,7 @@ class Simulation:
         
         # States and Histories
         self.state = roll_injection(starting_state)
-        self.state_previous = starting_state
+        self.state_previous = copy.copy(self.state)
         self.statedot_previous = np.zeros(len(starting_state))
         self.ideal_trajectory = planned_trajectory
         self.error_history = np.empty((0,len(starting_state)))
@@ -76,7 +77,7 @@ class Simulation:
 
         # Propogate given ODE, stop when rocket crashes as indicated by this here event function
         def event(t,y,r,it,tt):
-            if t < ts: # Prevent from thinking it's crashed when sitting on ground on first time step
+            if t < 10 * ts: # Prevent from thinking it's crashed when sitting on ground on first 10 time steps
                 return 1
             else:
                 if self.landed == True:
@@ -111,7 +112,7 @@ class Simulation:
     def check_landing(self, state, t):
         """ Check if the landing was valid"""
         # Check if below threshold altitude
-        if state[2] < 0.5 and t > 0.75 * self.tf:
+        if state[2] < THRESHOLD_ALTITUDE and t > THRESHOLD_TIME:
             # Check Z speed
             if abs(state[5]) < MAX_Z_SPEED:
                 # Check XY speed
@@ -130,8 +131,8 @@ class Simulation:
                     self.landing_violation = "EXCESSIVE LATERAL SPEED - {} m/s or {} m/s out of {} m/s allowed".format(abs(state[3]), abs(state[4]), MAX_XY_SPEED) 
             else:
                 self.landing_violation = "EXCESSIVE DESCENT SPEED - {} m/s out of {} m/s allowed".format(abs(state[5]), MAX_Z_SPEED)
-        else:
-            self.landing_violation = "OFF COURSE"
+        elif t > 2 and state[2] < THRESHOLD_ALTITUDE:
+            self.landing_violation = "OFF COURSE: t={}, alt={}".format(t, state[2])
                                
     def wrapper_state_to_stateDot(self, t, state, rocket, ideal_trajectory, t_vec):
         """ Wrapper for the dynamics, most of the work done in this step. It calls the controller and updates the rocket's state based on
@@ -151,7 +152,7 @@ class Simulation:
             self.K = compute_K_flight(len(self.state), A, B)
 
             # Sense the state from sensors
-            sensed_state = np.concatenate((rocket.gps.reading(state), 
+            sensed_state = np.concatenate((rocket.gps.reading(state, t), 
                                             rocket.accelerometer.read_velocity(state, self.statedot_previous[3:6]), 
                                             rocket.magnetometer.reading(state), 
                                             rocket.gyroscope.read_velocity(state, self.statedot_previous[9:12]))).reshape((1, 12))

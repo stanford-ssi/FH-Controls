@@ -1,15 +1,22 @@
 from Vehicle.rocketConstants import *
 from Vehicle.rocket import *
 import numpy as np
+import copy
 
 class Accelerometer():
     """ Accelerometer Object """
-    def __init__(self):
+    def __init__(self, state):
         self.sigma = ACCELEROMETER_SIGMA
         self.mu = ACCELEROMETER_MU
-        self.dt = ACCELEROMETER_DT
+        self.dt = ACCELEROMETER_UPDATE_FREQ
+        self.update_time = 1 / ACCELEROMETER_UPDATE_FREQ
         
-    def reading(self, real_acc):
+        # Readings Setup
+        self.last_measurement = np.array([0,0,0])
+        self.last_measurement = self.read_velocity(state, [0,0,0])
+        self.last_measurement_t = 0
+        
+    def get_acc(self, real_acc):
         """ Simulates a reading from the accelerometer
         
         Inputs:
@@ -19,8 +26,7 @@ class Accelerometer():
         - acceleration vector with x y and z (1x3)  
         
         """
-        acc_value = real_acc + np.random.normal(self.mu, self.sigma)
-        return acc_value
+        return np.array([np.random.normal(x + self.mu, self.sigma) for x in real_acc])
     
     def read_velocity(self, state, real_acc):
         """ Gets a velocity reading from the accelerometer
@@ -33,8 +39,8 @@ class Accelerometer():
         - velocity vector with p y and r (1x3)  
         
         """
-        acc = self.reading(real_acc)
-        new_velocity = state[3:6] + (acc * self.dt)
+        acc = self.get_acc(real_acc)
+        new_velocity = state[3:6] + (acc * self.update_time)
         return new_velocity
     
     def read_position(self, state, real_acc):
@@ -48,110 +54,43 @@ class Accelerometer():
         - position vector with p y and r (1x3)  
         
         """
-        acc = self.reading(real_acc)
+        acc = self.get_acc(real_acc)
         new_velocity = state[3:6] + (acc * self.dt)
         new_position = state[0:3] + (new_velocity * self.dt) + (0.5 * acc * self.dt * self.dt)
         return new_position
     
+    def reading(self, state, acc, t):
+        """ Simulates a reading from the GPS
+        
+        Inputs:
+        - state vector (1x12)
+        
+        Outputs:
+        - vector with x y and z, xdot, ydot, zdot (1x6)  
+        
+        """
+        if t > self.last_measurement_t + self.update_time:
+            self.last_measurement_t = t
+            self.last_measurement = self.read_velocity(state, acc)
+            return self.last_measurement
+        else:
+            return np.array([None, None, None])
+    
 class Gyroscope():
     """ Gyroscope Object """
-    def __init__(self):
+    def __init__(self, state):
+        # Parameter Setup
         self.sigma = GYROSCOPE_SIGMA
         self.mu = GYROSCOPE_MU
-        self.dt = GYROSCOPE_UPDATE_FREQ
-    
-    def reading(self, real_acc):
-        """ Simulates a reading from the gyroscope
+        self.update_time = 1 / GYROSCOPE_UPDATE_FREQ
         
-        Inputs:
-        - real acceleration vector (1x3)
-        
-        Outputs:
-        - rotational accelerometer vector with p y and r (1x3)  
-        
-        """
-        acc_value = real_acc + np.random.normal(self.mu, self.sigma) #np.array([np.random.normal(x + self.mu, self.sigma) for x in state[0:3]])
-        return acc_value
-    
-    def read_velocity(self, state, real_acc):
-        """ Gets a rotational velocity reading from the gyro
-        
-        Inputs:
-        - state vector (1x12)
-        - real acceleration vector (1x3)
-        
-        Outputs:
-        - rotational velocity vector with p y and r (1x3)  
-        
-        """
-        acc = self.reading(real_acc)
-        new_velocity = state[9:12] + (acc * self.dt)
-        return new_velocity
-    
-    def read_position(self, state, real_acc):
-        """ Gets a rotational position reading from the gyro
-        
-        Inputs:
-        - state vector (1x12)
-        - real acceleration vector (1x3)
-        
-        Outputs:
-        - rotational position vector with p y and r (1x3)  
-        
-        """
-        acc = self.reading(real_acc)
-        new_velocity = state[9:12] + (acc * self.dt)
-        new_position = state[6:9] + (new_velocity * self.dt) + (0.5 * acc * self.dt * self.dt)
-        return new_position
-    
-class Magnetometer():
-    """ Magnetometer Object """
-    def __init__(self):
-        self.sigma = MAGNETOMETER_SIGMA
-        self.mu = MAGNETOMETER_MU
-        self.dt = MAGNETOMETER_DT
-    
-    def reading(self, state):
-        """ Simulates a reading from the magnetometer
-        
-        Inputs:
-        - state vector (1x12)
-        
-        Outputs:
-        - rotational position vector with p y and r (1x3)  
-        
-        """
-        return np.array([np.random.normal(x + self.mu, self.sigma) for x in state[6:9]])
-    
-class Barometer():
-    """ Barometer Object """
-    def __init__(self):
-        self.sigma = BAROMETER_SIGMA
-        self.mu = BAROMETER_MU
-        
-    def reading(self, state):
-        """ Simulates a reading from the Barometer
-        
-        Inputs:
-        - state vector (1x12)
-        
-        Outputs:
-        - z altitutde 
-        
-        """
-        return np.random.normal(state[2] + self.mu, self.sigma)
-    
-class GPS():
-    """ GPS Object """
-    def __init__(self, state):
-        self.sigma = GPS_SIGMA
-        self.mu = GPS_MU
-        self.update_time = 1 / GPS_UPDATE_FREQ
-        self.data = self.update_reading(state[0:3])
+        # Readings Setup
+        self.last_measurement = np.array([0,0,0])
+        self.last_measurement = self.update_reading(state)
         self.last_measurement_t = 0
         
     def update_reading(self, state):
-        return np.array([np.random.normal(x + self.mu, self.sigma) for x in state[0:3]])
+        return np.array([np.random.normal(x + self.mu, self.sigma) for x in state[9:12]])
         
     def reading(self, state, t):
         """ Simulates a reading from the GPS
@@ -160,12 +99,113 @@ class GPS():
         - state vector (1x12)
         
         Outputs:
-        - position vector with x y and z (1x3)  
+        - vector with x y and z, xdot, ydot, zdot (1x6)  
         
         """
         if t > self.last_measurement_t + self.update_time:
             self.last_measurement_t = t
-            self.data = self.update_reading(state)
-            return self.data
+            self.last_measurement = self.update_reading(state)
+            return self.last_measurement
         else:
-            return self.data
+            return np.array([None, None, None])
+    
+class Magnetometer():
+    """ Magnetometer Object """
+    def __init__(self, state):
+        # Parameter Setup
+        self.sigma = MAGNETOMETER_SIGMA
+        self.mu = MAGNETOMETER_MU
+        self.update_time = 1 / MAGNETOMETER_UPDATE_FREQ
+        
+        # Readings Setup
+        self.last_measurement = np.array([0,0,0])
+        self.last_measurement = self.update_reading(state)
+        self.last_measurement_t = 0
+        
+    def update_reading(self, state):
+        return np.array([np.random.normal(x + self.mu, self.sigma) for x in state[6:9]])
+        
+    def reading(self, state, t):
+        """ Simulates a reading from the GPS
+        
+        Inputs:
+        - state vector (1x12)
+        
+        Outputs:
+        - vector with x y and z, xdot, ydot, zdot (1x6)  
+        
+        """
+        if t > self.last_measurement_t + self.update_time:
+            self.last_measurement_t = t
+            self.last_measurement = self.update_reading(state)
+            return self.last_measurement
+        else:
+            return np.array([None, None, None])
+    
+class Barometer():
+    """ Barometer Object """
+    def __init__(self, state):
+        # Parameter Setup
+        self.sigma = BAROMETER_SIGMA
+        self.mu = BAROMETER_MU
+        self.update_time = 1 / BAROMETER_UPDATE_FREQ
+        
+        # Readings Setup
+        self.last_measurement = np.array([0])
+        self.last_measurement = self.update_reading(state)
+        self.last_measurement_t = 0
+        
+    def update_reading(self, state):
+        return np.array([np.random.normal(state[2] + self.mu, self.sigma)])
+        
+    def reading(self, state, t):
+        """ Simulates a reading from the GPS
+        
+        Inputs:
+        - state vector (1x12)
+        
+        Outputs:
+        - vector with x y and z, xdot, ydot, zdot (1x6)  
+        
+        """
+        if t > self.last_measurement_t + self.update_time:
+            self.last_measurement_t = t
+            self.last_measurement = self.update_reading(state)
+            return self.last_measurement
+        else:
+            return np.array([None])
+    
+class GPS():
+    """ GPS Object """
+    def __init__(self, state):
+        # Parameter Setup
+        self.sigma = GPS_SIGMA
+        self.mu = GPS_MU
+        self.update_time = 1 / GPS_UPDATE_FREQ
+        
+        # Readings Setup
+        self.last_measurement = np.array([0,0,0,0,0,0])
+        self.last_measurement = self.update_reading(state[0:3])
+        self.last_measurement_t = 0
+        
+    def update_reading(self, state):
+        pos = np.array([np.random.normal(x + self.mu, self.sigma) for x in state[0:3]])
+        vel = pos - self.last_measurement[0:3] / self.update_time
+        return np.hstack((pos, vel))
+        
+    def reading(self, state, t):
+        """ Simulates a reading from the GPS
+        
+        Inputs:
+        - state vector (1x12)
+        
+        Outputs:
+        - vector with x y and z, xdot, ydot, zdot (1x6)  
+        
+        """
+        if t > self.last_measurement_t + self.update_time:
+            self.last_measurement_t = t
+            self.last_measurement = self.update_reading(state)
+            return self.last_measurement
+        else:
+            return np.array([None, None, None, None, None, None])

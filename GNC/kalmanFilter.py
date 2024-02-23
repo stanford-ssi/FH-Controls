@@ -1,9 +1,9 @@
 import numpy as np
 from GNC.controlConstants import *
 
-def kalman_filter(x, u, Z, A, B, dt, engine_length, P):
+def kalman_filter(x, u, Z, A, B, dt, P):
     """ Kalman filter"""
-    
+    breakpoint()
     # Calculate Process Noise Matrix
     Q = np.eye(12) * 0.1
 

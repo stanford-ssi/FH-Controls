@@ -152,12 +152,15 @@ class Simulation:
             self.K = compute_K_flight(len(self.state), A, B)
 
             # Sense the state from sensors
-            sensed_state = np.concatenate((rocket.gps.reading(state, t), 
-                                            rocket.accelerometer.read_velocity(state, self.statedot_previous[3:6]), 
-                                            rocket.magnetometer.reading(state), 
-                                            rocket.gyroscope.read_velocity(state, self.statedot_previous[9:12]))).reshape((1, 12))
-            kalman_state, self.kalman_P = kalman_filter(self.kalman_state_history[-1] if t > 0 else np.zeros(len(state)), self.statedot_previous[3:6], sensed_state[0], self.A_orig, self.B_orig, self.ts, rocket.engine.length, P=self.kalman_P)
-            self.sensed_state_history = np.vstack([self.sensed_state_history, sensed_state])
+            Z = np.concatenate((rocket.gps.reading(state, t), 
+                                rocket.barometer.reading(state, t),
+                                rocket.accelerometer.reading(state, self.statedot_previous[3:6], t),
+                                rocket.magnetometer.reading(state, t),
+                                rocket.gyroscope.reading(state, t)), axis=None)
+            kalman_state, self.kalman_P = kalman_filter(self.kalman_state_history[-1] if t > 0 else np.zeros(len(state)), self.statedot_previous[3:6], 
+                                                        Z, self.A_orig, self.B_orig, self.ts, P=self.kalman_P)
+            
+            self.sensed_state_history = np.vstack([self.sensed_state_history, Z])
             self.kalman_state_history = np.vstack([self.kalman_state_history, kalman_state])            
             
             # Calculate Errors

@@ -36,10 +36,11 @@ class Rocket:
         self.R = None
         
         # Create Sensors
-        self.accelerometer = Accelerometer()
-        self.gyroscope = Gyroscope()
+        self.accelerometer = Accelerometer(INITIAL_STATE)
+        self.gyroscope = Gyroscope(INITIAL_STATE)
         self.gps = GPS(INITIAL_STATE)
-        self.magnetometer = Magnetometer()
+        self.magnetometer = Magnetometer(INITIAL_STATE)
+        self.barometer = Barometer(INITIAL_STATE)
 
     def build_rocket(self, components):
         ''' Takes in list of parts from rocket constants and build rocket'''

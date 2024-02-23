@@ -151,7 +151,23 @@ def create_gui(sim, planned_trajectory, trajectory, ts, tf):
     control_names = ["Gimbal Psi (degrees)", "Gimbal Theta (degrees)", "Throttle (percent)"]
     legend = ["T", "T", "T"]
     create_graph_set(tab3, controls, ts, tf, control_names, 3, legend)
-    notebook.add(tab3, text="| Control Inputs |")
+    notebook.add(tab3, text="| Control Angles |")
+    
+        # Controls 2
+    tab8 = ttk.Frame(notebook)
+    controls = [sim.rocket.engine.posx_history, sim.rocket.engine.posy_history, sim.rocket.engine.throttle_history]
+    control_names = ["PosX (m)", "PosY (m)", "Throttle (percent)"]
+    legend = ["T", "T", "T"]
+    create_graph_set(tab8, controls, ts, tf, control_names, 3, legend)
+    notebook.add(tab8, text="| Control Inputs |")
+    
+    # Controls 3
+    tab12 = ttk.Frame(notebook)
+    controls = [sim.u_history[:,0], sim.u_history[:,1], sim.u_history[:,2]]
+    control_names = ["Ux (m/s^2)", "Uy (m/s^2)", "Uz (m/s^2)"]
+    legend = ["T", "T", "T"]
+    create_graph_set(tab12, controls, ts, tf, control_names, 3, legend)
+    notebook.add(tab12, text="| Control Inputs (U) |")
     
     # MOI
     tab4 = ttk.Frame(notebook)
@@ -185,14 +201,6 @@ def create_gui(sim, planned_trajectory, trajectory, ts, tf):
     legend = ["T"]
     create_graph_set(tab7, [np.linalg.norm(sim.wind_history, axis=1), sim.rocket.engine.posx_history * 10, sim.rocket.engine.posy_history * 10, sim.rocket.engine.throttle_history], ts, tf, ["Wind"], 1, legend)
     notebook.add(tab7, text="| Wind |")
-    
-    # Controls 2
-    tab8 = ttk.Frame(notebook)
-    controls = [sim.rocket.engine.posx_history, sim.rocket.engine.posy_history, sim.rocket.engine.throttle_history]
-    control_names = ["PosX (m)", "PosY (m)", "Throttle (percent)"]
-    legend = ["T", "T", "T"]
-    create_graph_set(tab8, controls, ts, tf, control_names, 3, legend)
-    notebook.add(tab8, text="| Control Inputs |")
 
     # Landing
     tab9 = ttk.Frame(notebook)

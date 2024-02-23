@@ -16,7 +16,7 @@ data_list = []
 truth = [10]
 sensor = Accelerometer()
 for i in range(10000):
-    data_list.append(sensor.reading(truth))
+    data_list.append(sensor.get_acc(truth))
 bins = np.linspace(min(data_list)[0], max(data_list)[0] + 1, 200)  # You can adjust the bin width as needed
 result = create_frequency_distribution(data_list, bins)
 

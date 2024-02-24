@@ -14,7 +14,7 @@ trajectory = sim.propogate()
 sim.display_end_info()
 
 # Graphs
-create_gui(sim, planned_trajectory, trajectory, TIMESTEP, FINAL_TIME)
+create_gui(sim, planned_trajectory, trajectory, TIMESTEP, sim.previous_time)
 
 
 

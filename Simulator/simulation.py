@@ -49,7 +49,7 @@ class Simulation:
         self.B_orig = compute_B(self.linearized_x, self.linearized_u, self.rocket, self.ts)
         
         # Sensors:
-        self.sensed_state_history = np.empty((0,len(starting_state)))
+        self.sensed_state_history = np.empty((0,16))
         self.kalman_state_history = np.empty((0,len(starting_state)))
         self.kalman_P = np.eye(12)
 
@@ -157,10 +157,9 @@ class Simulation:
                                 rocket.accelerometer.reading(state, self.statedot_previous[3:6], t),
                                 rocket.magnetometer.reading(state, t),
                                 rocket.gyroscope.reading(state, t)), axis=None)
+            self.sensed_state_history = np.vstack([self.sensed_state_history, Z])
             kalman_state, self.kalman_P = kalman_filter(self.kalman_state_history[-1] if t > 0 else np.zeros(len(state)), self.statedot_previous[3:6], 
                                                         Z, self.A_orig, self.B_orig, self.ts, P=self.kalman_P)
-            
-            self.sensed_state_history = np.vstack([self.sensed_state_history, Z])
             self.kalman_state_history = np.vstack([self.kalman_state_history, kalman_state])            
             
             # Calculate Errors

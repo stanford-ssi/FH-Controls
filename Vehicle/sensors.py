@@ -69,12 +69,12 @@ class Accelerometer():
         - vector with x y and z, xdot, ydot, zdot (1x6)  
         
         """
-        if t > self.last_measurement_t + self.update_time:
+        if t > self.last_measurement_t + self.update_time or t == 0:
             self.last_measurement_t = t
             self.last_measurement = self.read_velocity(state, acc)
             return self.last_measurement
         else:
-            return np.array([None, None, None])
+            return np.array([np.nan, np.nan, np.nan])
     
 class Gyroscope():
     """ Gyroscope Object """
@@ -102,12 +102,12 @@ class Gyroscope():
         - vector with x y and z, xdot, ydot, zdot (1x6)  
         
         """
-        if t > self.last_measurement_t + self.update_time:
+        if t > self.last_measurement_t + self.update_time or t == 0:
             self.last_measurement_t = t
             self.last_measurement = self.update_reading(state)
             return self.last_measurement
         else:
-            return np.array([None, None, None])
+            return np.array([np.nan, np.nan, np.nan])
     
 class Magnetometer():
     """ Magnetometer Object """
@@ -135,12 +135,12 @@ class Magnetometer():
         - vector with x y and z, xdot, ydot, zdot (1x6)  
         
         """
-        if t > self.last_measurement_t + self.update_time:
+        if t > self.last_measurement_t + self.update_time or t == 0:
             self.last_measurement_t = t
             self.last_measurement = self.update_reading(state)
             return self.last_measurement
         else:
-            return np.array([None, None, None])
+            return np.array([np.nan, np.nan, np.nan])
     
 class Barometer():
     """ Barometer Object """
@@ -168,12 +168,12 @@ class Barometer():
         - vector with x y and z, xdot, ydot, zdot (1x6)  
         
         """
-        if t > self.last_measurement_t + self.update_time:
+        if t > self.last_measurement_t + self.update_time or t == 0:
             self.last_measurement_t = t
             self.last_measurement = self.update_reading(state)
             return self.last_measurement
         else:
-            return np.array([None])
+            return np.array([np.nan])
     
 class GPS():
     """ GPS Object """
@@ -203,9 +203,9 @@ class GPS():
         - vector with x y and z, xdot, ydot, zdot (1x6)  
         
         """
-        if t > self.last_measurement_t + self.update_time:
+        if t > self.last_measurement_t + self.update_time or t == 0:
             self.last_measurement_t = t
             self.last_measurement = self.update_reading(state)
             return self.last_measurement
         else:
-            return np.array([None, None, None, None, None, None])
+            return np.array([np.nan, np.nan, np.nan, np.nan, np.nan, np.nan])

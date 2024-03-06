@@ -42,8 +42,8 @@ def pull_sensed_dynamics(sensed_state_history, ts, tf):
     positional = {"GPS": sensed_state_history[:,0:6],
                   "Barometer": sensed_state_history[:,6],
                   "IMU": sensed_state_history[:,7:10]}
-    rotational = {"Magnetometer": sensed_state_history[:,10:13],
-                  "Gyro": sensed_state_history[:,13:16]}
+    rotational = {"Magnetometer": sensed_state_history[:,10:13] * RAD2DEG,
+                  "Gyro": sensed_state_history[:,13:16] * RAD2DEG}
     return positional, rotational
 
 def create_graph_set(tab, var, ts, tf, names, num_graphs, legend, multiple_on_one_graph=False, sensors=None):
@@ -74,7 +74,7 @@ def create_graph_set(tab, var, ts, tf, names, num_graphs, legend, multiple_on_on
             for v in range(len(var)):
                 var_ax = plt.subplot(gs[i])
                 plot_graph(var[v][i], ts, tf, var_ax, legend[v], names[i])
-            if not sensors==None:
+            if not sensors==None and "GPS" in sensors:
                 if i == 0:
                     data = sensors["GPS"][:,0]
                     t = np.linspace(0, tf, len(data))
@@ -92,11 +92,46 @@ def create_graph_set(tab, var, ts, tf, names, num_graphs, legend, multiple_on_on
                     var_ax.legend()
                     data = sensors["Barometer"]
                     plot_graph(data, 1/BAROMETER_UPDATE_FREQ, tf, var_ax, "Barometer", names[i])
-                    
-                
-                                              
-                
-
+                if i == 3:
+                    data = sensors["GPS"][:,3]
+                    t = np.linspace(0, tf, len(data))
+                    var_ax.scatter(t[0:len(data)], data, label = "GPS")
+                    var_ax.legend()    
+                    data = sensors["IMU"][:,0]
+                    plot_graph(data, 1/ACCELEROMETER_UPDATE_FREQ, tf, var_ax, "IMU", names[i])                
+                if i == 4:
+                    data = sensors["GPS"][:,4]
+                    t = np.linspace(0, tf, len(data))
+                    var_ax.scatter(t[0:len(data)], data, label = "GPS")
+                    var_ax.legend()    
+                    data = sensors["IMU"][:,1]
+                    plot_graph(data, 1/ACCELEROMETER_UPDATE_FREQ, tf, var_ax, "IMU", names[i])   
+                if i == 5:
+                    data = sensors["GPS"][:,5]
+                    t = np.linspace(0, tf, len(data))
+                    var_ax.scatter(t[0:len(data)], data, label = "GPS")
+                    var_ax.legend()    
+                    data = sensors["IMU"][:,2]
+                    plot_graph(data, 1/ACCELEROMETER_UPDATE_FREQ, tf, var_ax, "IMU", names[i])                                 
+            if not sensors==None and "Gyro" in sensors:    
+                if i == 0:
+                    data = sensors["Magnetometer"][:,0]
+                    plot_graph(data, 1/MAGNETOMETER_UPDATE_FREQ, tf, var_ax, "Magnetometer", names[i])
+                if i == 1:
+                    data = sensors["Magnetometer"][:,1]
+                    plot_graph(data, 1/MAGNETOMETER_UPDATE_FREQ, tf, var_ax, "Magnetometer", names[i])  
+                if i == 2:
+                    data = sensors["Magnetometer"][:,2]
+                    plot_graph(data, 1/MAGNETOMETER_UPDATE_FREQ, tf, var_ax, "Magnetometer", names[i])
+                if i == 3:
+                    data = sensors["Gyro"][:,0]
+                    plot_graph(data, 1/GYROSCOPE_UPDATE_FREQ, tf, var_ax, "Gyro", names[i])             
+                if i == 4:
+                    data = sensors["Gyro"][:,1]
+                    plot_graph(data, 1/GYROSCOPE_UPDATE_FREQ, tf, var_ax, "Gyro", names[i])        
+                if i == 5:
+                    data = sensors["Gyro"][:,2]
+                    plot_graph(data, 1/GYROSCOPE_UPDATE_FREQ, tf, var_ax, "Gyro", names[i])                
 
     plt.subplots_adjust(wspace=0.5, hspace=0.5)
 
@@ -247,14 +282,15 @@ def create_gui(sim, planned_trajectory, trajectory, ts, tf):
     create_graph_set(tab10, [true_dynamics[0:9], kalman_dynamics[0:9]], ts, tf, dynamics_plot_names, 9, legend, sensors=sensed_positional_dynamics)
     notebook.add(tab10, text="| Sensed Dynamics |")
     
-    # # Sensors
-    # tab11 = ttk.Frame(notebook)
-    # dynamics_plot_names = ["Pitch (degrees)", "Yaw (degrees)", "Roll (degrees)", 
-    #                                   "Pitch Rate (deg/s)", "Yaw Rate (deg/s)", "Roll Rate (deg/s)", 
-    #                                   "Pitch Acceleration (deg/s2)", "Yaw Acceleration (deg/s2)", "Roll Acceleration (deg/s2)"]
-    # legend = ["T", "S", "K"]
-    # create_graph_set(tab11, [[x * RAD2DEG for x in true_dynamics[9:18]], [x * RAD2DEG for x in sensed_dynamics[9:18]], [x * RAD2DEG for x in kalman_dynamics[9:18]]], ts, tf, dynamics_plot_names, 9, legend)
-    # notebook.add(tab11, text="| Sensed Rotations |")
+    # Sensors
+    tab11 = ttk.Frame(notebook)
+    dynamics_plot_names = ["Pitch (degrees)", "Yaw (degrees)", "Roll (degrees)", 
+                                      "Pitch Rate (deg/s)", "Yaw Rate (deg/s)", "Roll Rate (deg/s)", 
+                                      "Pitch Acceleration (deg/s2)", "Yaw Acceleration (deg/s2)", "Roll Acceleration (deg/s2)"]
+    legend = ["T", "K"]
+    create_graph_set(tab11, [[x * RAD2DEG for x in true_dynamics[9:18]], [x * RAD2DEG for x in kalman_dynamics[9:18]]], ts, tf, dynamics_plot_names, 9, legend, 
+                     sensors=sensed_rotational_dynamics)
+    notebook.add(tab11, text="| Sensed Rotations |")
     
     '''
     To add new graphs use the following format:

@@ -2,6 +2,7 @@ import numpy as np
 import scipy.integrate
 import Vehicle.engine
 import Vehicle.rocket
+import control as ct
 from Vehicle.sensors import *
 from GNC.constraints import *
 from GNC.controller import *
@@ -148,7 +149,7 @@ class Simulation:
             self.wind_history = np.vstack([self.wind_history, self.current_wind])
             
             # Pre Control Work - Rotate State Matrices into current frame                 
-            A, B = update_linearization(self.A_orig, self.B_orig, rocket.R) 
+            A, B = update_linearization(self.A_orig, self.B_orig, rocket.R)
             self.K = compute_K_flight(len(self.state), A, B)
 
             # Sense the state from sensors

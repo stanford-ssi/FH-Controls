@@ -190,7 +190,7 @@ class GPS():
         
     def update_reading(self, state):
         pos = np.array([np.random.normal(x + self.mu, self.sigma) for x in state[0:3]])
-        vel = pos - self.last_measurement[0:3] / self.update_time
+        vel = np.array([np.random.normal(x + self.mu, self.sigma) for x in state[3:6]])
         return np.hstack((pos, vel))
         
     def reading(self, state, t):

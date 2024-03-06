@@ -13,8 +13,8 @@ MAX_POS_RATE = 0.01# m per second - actuator speed in direction with a bit of sa
 STEP_SIZE = 0.001
 
 # LQR Controller Penalties for regular flight
-Q_X = 0.35
-Q_Y = 0.35
+Q_X = 10
+Q_Y = 10
 Q_Z = 0.05
 Q_VX = 1
 Q_VY = 1

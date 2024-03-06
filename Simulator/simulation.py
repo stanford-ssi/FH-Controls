@@ -2,6 +2,7 @@ import numpy as np
 import scipy.integrate
 import Vehicle.engine
 import Vehicle.rocket
+import control as ct
 from Vehicle.sensors import *
 from GNC.constraints import *
 from GNC.controller import *
@@ -12,6 +13,7 @@ from Simulator.errorInjection import *
 from Simulator.simulationConstants import GRAVITY as g
 from Simulator.simulationConstants import RHO as rho
 from scipy.spatial.transform import Rotation
+import copy
 
 class Simulation:
     """ Class Representing the Simulation and associated data"""
@@ -22,7 +24,7 @@ class Simulation:
         
         # States and Histories
         self.state = roll_injection(starting_state)
-        self.state_previous = starting_state
+        self.state_previous = copy.copy(self.state)
         self.statedot_previous = np.zeros(len(starting_state))
         self.ideal_trajectory = planned_trajectory
         self.error_history = np.empty((0,len(starting_state)))
@@ -48,7 +50,7 @@ class Simulation:
         self.B_orig = compute_B(self.linearized_x, self.linearized_u, self.rocket, self.ts)
         
         # Sensors:
-        self.sensed_state_history = np.empty((0,len(starting_state)))
+        self.sensed_state_history = np.empty((0,16))
         self.kalman_state_history = np.empty((0,len(starting_state)))
         self.kalman_P = np.eye(12)
 
@@ -76,7 +78,7 @@ class Simulation:
 
         # Propogate given ODE, stop when rocket crashes as indicated by this here event function
         def event(t,y,r,it,tt):
-            if t < ts: # Prevent from thinking it's crashed when sitting on ground on first time step
+            if t < 10 * ts: # Prevent from thinking it's crashed when sitting on ground on first 10 time steps
                 return 1
             else:
                 if self.landed == True:
@@ -111,7 +113,7 @@ class Simulation:
     def check_landing(self, state, t):
         """ Check if the landing was valid"""
         # Check if below threshold altitude
-        if state[2] < 0.5 and t > 0.75 * self.tf:
+        if state[2] < THRESHOLD_ALTITUDE and t > THRESHOLD_TIME:
             # Check Z speed
             if abs(state[5]) < MAX_Z_SPEED:
                 # Check XY speed
@@ -130,8 +132,8 @@ class Simulation:
                     self.landing_violation = "EXCESSIVE LATERAL SPEED - {} m/s or {} m/s out of {} m/s allowed".format(abs(state[3]), abs(state[4]), MAX_XY_SPEED) 
             else:
                 self.landing_violation = "EXCESSIVE DESCENT SPEED - {} m/s out of {} m/s allowed".format(abs(state[5]), MAX_Z_SPEED)
-        else:
-            self.landing_violation = "OFF COURSE"
+        elif t > 2 and state[2] < THRESHOLD_ALTITUDE:
+            self.landing_violation = "OFF COURSE: t={}, alt={}".format(t, state[2])
                                
     def wrapper_state_to_stateDot(self, t, state, rocket, ideal_trajectory, t_vec):
         """ Wrapper for the dynamics, most of the work done in this step. It calls the controller and updates the rocket's state based on
@@ -147,16 +149,18 @@ class Simulation:
             self.wind_history = np.vstack([self.wind_history, self.current_wind])
             
             # Pre Control Work - Rotate State Matrices into current frame                 
-            A, B = update_linearization(self.A_orig, self.B_orig, rocket.R) 
+            A, B = update_linearization(self.A_orig, self.B_orig, rocket.R)
             self.K = compute_K_flight(len(self.state), A, B)
 
             # Sense the state from sensors
-            sensed_state = np.concatenate((rocket.gps.reading(state), 
-                                            rocket.accelerometer.read_velocity(state, self.statedot_previous[3:6]), 
-                                            rocket.magnetometer.reading(state), 
-                                            rocket.gyroscope.read_velocity(state, self.statedot_previous[9:12]))).reshape((1, 12))
-            kalman_state, self.kalman_P = kalman_filter(self.kalman_state_history[-1] if t > 0 else np.zeros(len(state)), self.statedot_previous[3:6], sensed_state[0], self.A_orig, self.B_orig, self.ts, rocket.engine.length, P=self.kalman_P)
-            self.sensed_state_history = np.vstack([self.sensed_state_history, sensed_state])
+            Z = np.concatenate((rocket.gps.reading(state, t), 
+                                rocket.barometer.reading(state, t),
+                                rocket.accelerometer.reading(state, self.statedot_previous[3:6], t),
+                                rocket.magnetometer.reading(state, t),
+                                rocket.gyroscope.reading(state, t)), axis=None)
+            self.sensed_state_history = np.vstack([self.sensed_state_history, Z])
+            kalman_state, self.kalman_P = kalman_filter(self.kalman_state_history[-1] if t > 0 else np.zeros(len(state)), self.statedot_previous[3:6], 
+                                                        Z, self.A_orig, self.B_orig, self.ts, P=self.kalman_P)
             self.kalman_state_history = np.vstack([self.kalman_state_history, kalman_state])            
             
             # Calculate Errors

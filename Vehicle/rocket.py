@@ -7,6 +7,7 @@ from scipy.integrate import cumtrapz
 from scipy.interpolate import interp1d
 from Vehicle.sensors import *
 from Simulator.simulationConstants import *
+from Vehicle.newActuatorModel import *
 
 
 class Rocket:
@@ -41,6 +42,11 @@ class Rocket:
         self.gps = GPS(INITIAL_STATE)
         self.magnetometer = Magnetometer(INITIAL_STATE)
         self.barometer = Barometer(INITIAL_STATE)
+        
+        # Create Linear Actuators
+        self.actuator_X = LinearActuator(FINAL_TIME, TIMESTEP)
+        self.actuator_Y = LinearActuator(FINAL_TIME, TIMESTEP)
+        
 
     def build_rocket(self, components):
         ''' Takes in list of parts from rocket constants and build rocket'''

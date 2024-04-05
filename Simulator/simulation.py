@@ -171,11 +171,13 @@ class Simulation:
             U = control_rocket(self.K, state_error, self.linearized_u)
             self.u_history = np.vstack([self.u_history, U])
             
+            
+            
             # Convert desired accelerations to throttle and gimbal angles
             pos_x, pos_y, throttle = accelerations_2_actuator_positions(U, rocket, t)
             
             # Inject Error to actuator positions
-            pos_x, pos_y, throttle = actuator_error_injection(pos_x, pos_y, throttle)
+            #pos_x, pos_y, throttle = actuator_error_injection(pos_x, pos_y, throttle)
                         
             # Perform actuator constraint checks
             if not t == 0:

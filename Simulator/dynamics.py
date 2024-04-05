@@ -148,10 +148,14 @@ def accelerations_2_actuator_positions(U_gf, rocket, t):
     T = rocket.mass * np.sqrt((U[0] ** 2) + (U[1] ** 2) + (U[2] ** 2))
     gimbal_r = np.tan(gimbal_psi) * rocket.engine.length
     if (gimbal_theta < np.pi / 2) and (gimbal_theta > -np.pi / 2):
-        pos_x = np.sqrt((gimbal_r ** 2) / (1 + (np.tan(gimbal_theta) ** 2)))
+        pos_x_commanded = np.sqrt((gimbal_r ** 2) / (1 + (np.tan(gimbal_theta) ** 2)))
     else:
-        pos_x = -1 * np.sqrt((gimbal_r ** 2) / (1 + (np.tan(gimbal_theta) ** 2)))
-    pos_y = pos_x * np.tan(gimbal_theta)
-    throttle = rocket.engine.get_throttle(t, T)
+        pos_x_commanded = -1 * np.sqrt((gimbal_r ** 2) / (1 + (np.tan(gimbal_theta) ** 2)))
+    pos_y_commanded = pos_x_commanded * np.tan(gimbal_theta)
+    throttle_commanded = rocket.engine.get_throttle(t, T)
+   
+    # Send signal to actuator
+    pos_x = rocket.actuator_X.get_output(pos_x_commanded, t)
+    pos_y = rocket.actuator_Y.get_output(pos_y_commanded, t)
     
-    return pos_x, pos_y, throttle
+    return pos_x, pos_y, throttle_commanded

@@ -33,18 +33,17 @@ def kalman_filter(x, u, y, A, B, dt, P):
     x_next, P_next = predict_step(x, u, A, B, P, Q, dt)
     
     # Measurement Step
-    z = np.dot(H, x_next) # Expected Measurement based on state
-    x_fit, P_fit = update_step(x_next, y, z, H, R, P_next)
- 
-    return x_fit, P_fit
+    # z = np.dot(H, x_next) # Expected Measurement based on state
+    # x_fit, P_fit = update_step(x_next, y, z, H, R, P_next)
+
+    return x_next, P_next
         
 def predict_step(x, u, A, B, P_prev, Q, dt):
     """ Prediction step for kalman filter"""
     A_new = np.eye(12) + A*dt
     B_new = B*dt
-    
+    print(A_new[9])
     x_next = A_new @ x + B_new @ u  #Predicted State Estimate
-    #breakpoint()
     P_next = (A_new @ P_prev @ A_new.T) + Q # Predicted Estimate Covariance
     return x_next, P_next
 
@@ -61,7 +60,7 @@ def update_step(x_next, y, z, H, R, P_next):
     x_fit = x_next + np.dot(K, (y-z))
     
     chunk = np.eye(12) - (K @ H)
-    P_fit = (chunk @ P_next @ chunk) + (K @ R @ K.T)
+    P_fit = (chunk @ P_next @ chunk.T) + (K @ R @ K.T)
     
     return x_fit, P_fit
     

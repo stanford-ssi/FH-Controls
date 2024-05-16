@@ -15,10 +15,10 @@ STEP_SIZE = 0.001
 # LQR Controller Penalties for regular flight
 Q_X = 10
 Q_Y = 10
-Q_Z = 0.05
-Q_VX = 1
-Q_VY = 1
-Q_VZ = 0.01
+Q_Z = 0.01
+Q_VX = 0.5
+Q_VY = 0.5
+Q_VZ = 0.02
 Q_PIT = 0.1
 Q_YAW = 0.1
 Q_VPIT = 0.01

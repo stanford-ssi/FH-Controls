@@ -140,7 +140,7 @@ class Simulation:
         control inputs and fuel drain."""
         # Check if we are on an actual simulation timestep or if this is ode solving shenanigans
         if (t == 0) or (t >= t_vec[self.current_step] and self.previous_time < t_vec[self.current_step]):
-            
+
             # Log Rocket Rotation                  
             rocket.R = Rotation.from_euler('xyz', [state[7], -state[6], -state[8]]).as_matrix()                  
               
@@ -149,33 +149,38 @@ class Simulation:
             self.wind_history = np.vstack([self.wind_history, self.current_wind])
             
             # Pre Control Work - Rotate State Matrices into current frame                 
-            A, B = update_linearization(self.A_orig, self.B_orig, rocket.R)
+            A = compute_A(state, self.linearized_u, self.rocket, self.ts)
+            B = compute_B(state, self.linearized_u, self.rocket, self.ts) 
             self.K = compute_K_flight(len(self.state), A, B)
+       
 
             # Sense the state from sensors
-            Z = np.concatenate((rocket.gps.reading(state, t), 
+            Y = np.concatenate((rocket.gps.reading(state, t), 
                                 rocket.barometer.reading(state, t),
                                 rocket.accelerometer.reading(state, self.statedot_previous[3:6], t),
                                 rocket.magnetometer.reading(state, t),
                                 rocket.gyroscope.reading(state, t)), axis=None)
-            self.sensed_state_history = np.vstack([self.sensed_state_history, Z])
-            kalman_state, self.kalman_P = kalman_filter(self.kalman_state_history[-1] if t > 0 else np.zeros(len(state)), self.statedot_previous[3:6], 
-                                                        Z, self.A_orig, self.B_orig, self.ts, P=self.kalman_P)
+            self.sensed_state_history = np.vstack([self.sensed_state_history, Y])
+            
+            kalman_state, self.kalman_P = kalman_filter(state if t > 0 else np.zeros(len(state)), self.statedot_previous[3:6], 
+                                                        Y, self.A_orig, self.B_orig, self.ts, P=self.kalman_P)
             self.kalman_state_history = np.vstack([self.kalman_state_history, kalman_state])            
             
             # Calculate Errors
-            state_error = kalman_state - ideal_trajectory[self.current_step]
+            state_error = state - ideal_trajectory[self.current_step]
             self.error_history = np.vstack([self.error_history, state_error])
 
             # Call Controller
             U = control_rocket(self.K, state_error, self.linearized_u)
-            self.u_history = np.vstack([self.u_history, U])
+            self.u_history = np.vstack([self.u_history, np.dot(rocket.R, U)]) # Rotated into rocket frame
+            
+            
             
             # Convert desired accelerations to throttle and gimbal angles
             pos_x, pos_y, throttle = accelerations_2_actuator_positions(U, rocket, t)
             
             # Inject Error to actuator positions
-            pos_x, pos_y, throttle = actuator_error_injection(pos_x, pos_y, throttle)
+            #pos_x, pos_y, throttle = actuator_error_injection(pos_x, pos_y, throttle)
                         
             # Perform actuator constraint checks
             if not t == 0:

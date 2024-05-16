@@ -170,8 +170,33 @@ def plot_landing_graph(tab, title, xdata, ydata, xlabel, ylabel):
     canvas.draw()
     canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
+def plot_time_series(time_vector, output_vector, clear_plot=False):
+    """
+    Plots a time series given a time vector and an output vector.
+
+    Parameters:
+        time_vector (list or numpy array): Time vector.
+        output_vector (list or numpy array): Output vector.
+        clear_plot (bool): Whether to clear the existing plot before plotting new data.
+    """
+    if clear_plot:
+        plt.clf()
+
+    plt.plot(time_vector, output_vector)
+    plt.xlabel('Time')
+    plt.ylabel('Output')
+    plt.title('Time Series Plot')
+    plt.grid(True)
+
 
 def create_gui(sim, planned_trajectory, trajectory, ts, tf):
+    
+    # time_series = np.linspace(0, 3, 30)
+    # plot_time_series(time_series, sim.rocket.engine.posx_history[0:len(time_series)])
+    # plot_time_series(time_series, sim.u_history[:,0][0:len(time_series)] * -0.05)
+    # plt.show()
+    # breakpoint()
+    
     
     #Set up tkinter
     root = tk.Tk()
@@ -300,6 +325,6 @@ def create_gui(sim, planned_trajectory, trajectory, ts, tf):
     create_graph_set(tabn, the data itself, ts, tf, names, number of graphs)
     notebook.add(tabn, text="| tab title |")
     '''
-
+                     
     notebook.pack(expand=1.25, fill="both", padx=10, pady=10)
     root.mainloop()

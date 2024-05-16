@@ -4,7 +4,7 @@ import numpy as np
 # State is all relative to global frame except Z rotation which is rocket frame
 # Pitch is defined as angle from upward z axis towards pos x axis, yaw is angle from upward z towards pos y, and roll is ccw looking down on rocket
 # Rotation order yaw, pitch, roll
-INITIAL_STATE = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) # Start State [X, Y, Z, VX, VY, VZ, THX, THY, THZ, OMX, OMY, OMZ]
+INITIAL_STATE = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) # Start State [X, Y, Z, VX, VY, VZ, THX, THY, THZ, WX, WY, WZ]
 WIND = [5, 5, 0.25] # Sigma values for wind
 FINAL_TIME = 20
 TIMESTEP = 0.1
@@ -28,7 +28,7 @@ RANDOMIZED_ERROR_THROTTLE_SIGMA = 0.01
 CONSTANT_ERROR_THROTTLE = 0.0
 
 # Random Roll Injection
-ROLL_SIGMA = 0.5
+ROLL_SIGMA = 0.75
 ROLL_MU = 0
 
 # Landing Constraints

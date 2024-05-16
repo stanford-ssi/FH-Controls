@@ -27,7 +27,6 @@ def dynamics_for_state_space_control(state, rocket, dt, acc_x, acc_y, acc_z):
     # Build Statedot
     statedot = np.zeros(len(state))
     statedot[0:3] = v
-    statedot[6:9] = w
     
     # Rocket rotations
     pitch = state[6] # Angle from rocket from pointing up towards positive x axis
@@ -58,7 +57,9 @@ def dynamics_for_state_space_control(state, rocket, dt, acc_x, acc_y, acc_z):
 
     statedot[3:6] = a_global.tolist()
     statedot[9:12] = alphas.tolist()
-
+    
+    # Rotational Kinematics
+    statedot[6:9] = get_EA_dot(state)
     return statedot
     
 def full_dynamics(state, rocket, wind, dt, t):
@@ -94,7 +95,6 @@ def full_dynamics(state, rocket, wind, dt, t):
     # Build Statedot
     statedot = np.zeros(len(state))
     statedot[0:3] = v
-    statedot[6:9] = w
     
     # Rocket rotations
     pitch = state[6] # Angle from rocket from pointing up towards positive x axis
@@ -126,8 +126,28 @@ def full_dynamics(state, rocket, wind, dt, t):
 
     statedot[3:6] = a_global.tolist()
     statedot[9:12] = alphas.tolist()
-    return statedot
     
+    # Rotational Kinematics
+    statedot[6:9] = get_EA_dot(state)
+
+    return statedot
+
+def get_EA_dot(state):
+    wx = state[9]
+    wy = state[10]
+    wz = state[11]
+    
+    pitch = state[6]
+    yaw = state[7]
+    roll = state[8]
+    
+    # Calculate dots
+    pitchdot = wy*np.cos(roll) - wz*np.sin(roll) 
+    rolldot = (1 / np.cos(pitch)) * (wy*np.sin(roll) - wz*np.cos(roll))
+    yawdot = (1 / np.cos(pitch)) * (wx*np.cos(pitch) + wy*np.sin(roll)*np.sin(pitch) + wz*np.cos(roll)*np.sin(pitch))
+    
+    return [pitchdot, yawdot, rolldot]
+ 
 def accelerations_2_actuator_positions(U_gf, rocket, t):
     """ Convert control input to engine position and throttle
     

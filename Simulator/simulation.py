@@ -140,7 +140,7 @@ class Simulation:
         control inputs and fuel drain."""
         # Check if we are on an actual simulation timestep or if this is ode solving shenanigans
         if (t == 0) or (t >= t_vec[self.current_step] and self.previous_time < t_vec[self.current_step]):
-            
+            print(state)
             # Log Rocket Rotation                  
             rocket.R = Rotation.from_euler('xyz', [state[7], -state[6], -state[8]]).as_matrix()                  
               
@@ -169,7 +169,7 @@ class Simulation:
 
             # Call Controller
             U = control_rocket(self.K, state_error, self.linearized_u)
-            self.u_history = np.vstack([self.u_history, U])
+            self.u_history = np.vstack([self.u_history, np.dot(rocket.R, U)]) # Rotated into rocket frame
             
             
             

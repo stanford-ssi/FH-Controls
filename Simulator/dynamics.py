@@ -155,7 +155,9 @@ def accelerations_2_actuator_positions(U_gf, rocket, t):
     throttle_commanded = rocket.engine.get_throttle(t, T)
    
     # Send signal to actuator
-    pos_x = rocket.actuator_X.get_output(pos_x_commanded, t)
-    pos_y = rocket.actuator_Y.get_output(pos_y_commanded, t)
+    # pos_x = rocket.actuator_X.get_output(pos_x_commanded, t)
+    # pos_y = rocket.actuator_Y.get_output(pos_y_commanded, t)
+    pos_x = pos_x_commanded
+    pos_y = pos_y_commanded
     
     return pos_x, pos_y, throttle_commanded

@@ -162,12 +162,12 @@ class Simulation:
                                 rocket.gyroscope.reading(state, t)), axis=None)
             self.sensed_state_history = np.vstack([self.sensed_state_history, Y])
             
-            kalman_state, self.kalman_P = kalman_filter(state if t > 0 else np.zeros(len(state)), self.statedot_previous[3:6], 
-                                                        Y, self.A_orig, self.B_orig, self.ts, P=self.kalman_P)
+            kalman_state, self.kalman_P = kalman_filter(self.kalman_state_history[-1] if t > 0 else np.zeros(len(state)), self.statedot_previous[3:6], 
+                                                        Y, A, B, self.ts, P=self.kalman_P)
             self.kalman_state_history = np.vstack([self.kalman_state_history, kalman_state])            
             
             # Calculate Errors
-            state_error = state - ideal_trajectory[self.current_step]
+            state_error = kalman_state - ideal_trajectory[self.current_step]
             self.error_history = np.vstack([self.error_history, state_error])
 
             # Call Controller

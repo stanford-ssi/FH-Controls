@@ -28,6 +28,7 @@ class Simulation:
         self.statedot_previous = np.zeros(len(starting_state))
         self.ideal_trajectory = planned_trajectory
         self.error_history = np.empty((0,len(starting_state)))
+        self.R_history = np.array([Rotation.from_euler('xyz', [starting_state[7], -starting_state[6], -starting_state[8]]).as_matrix()])
         
         # Simulation Variables
         self.ts = simulation_timestep
@@ -142,7 +143,8 @@ class Simulation:
         if (t == 0) or (t >= t_vec[self.current_step] and self.previous_time < t_vec[self.current_step]):
 
             # Log Rocket Rotation                  
-            rocket.R = Rotation.from_euler('xyz', [state[7], -state[6], -state[8]]).as_matrix()                  
+            rocket.R = Rotation.from_euler('xyz', [state[7], -state[6], -state[8]]).as_matrix()
+            self.R_history = np.vstack((self.R_history, np.expand_dims(rocket.R.T, axis=0)))                  
               
             # Determine wind at this moment in time
             self.current_wind = wind_randomness(self.base_wind, self.current_wind)

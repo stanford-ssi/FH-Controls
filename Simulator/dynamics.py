@@ -141,15 +141,13 @@ def get_EA_dot(state):
     wx = state[9]
     wy = state[10]
     wz = state[11]
-    
     pitch = state[6]
     yaw = state[7]
     roll = state[8]
     
-    # Calculate dots
-    pitchdot = wy*np.cos(roll) - wz*np.sin(roll) 
-    rolldot = (1 / np.cos(pitch)) * (wy*np.sin(roll) - wz*np.cos(roll))
-    yawdot = (1 / np.cos(pitch)) * (wx*np.cos(pitch) + wy*np.sin(roll)*np.sin(pitch) + wz*np.cos(roll)*np.sin(pitch))
+    pitchdot = wy*np.cos(roll) - wx*np.sin(roll) 
+    yawdot = (wy*np.sin(roll) + wx*np.cos(roll)) / np.cos(pitch)
+    rolldot = wz - (wy*np.cos(roll) - wz*np.sin(roll)) * np.tan(pitch)
     
     return [pitchdot, yawdot, rolldot]
  

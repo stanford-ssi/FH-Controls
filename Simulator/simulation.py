@@ -171,7 +171,8 @@ class Simulation:
             self.error_history = np.vstack([self.error_history, state_error])
 
             # Call Controller
-            U = control_rocket(self.K, state_error, self.linearized_u)
+            #U = control_rocket(self.K, state_error, self.linearized_u)
+            U = do_MPC(A, B, t, self.ts, self.tf, state, self.linearized_u, ideal_trajectory)
             self.u_history = np.vstack([self.u_history, np.dot(rocket.R, U)]) # Rotated into rocket frame
                         
             # Convert desired accelerations to throttle and gimbal angles

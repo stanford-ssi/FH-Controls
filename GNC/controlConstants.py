@@ -30,6 +30,9 @@ R_T = 0.075
 ## Kalman Filter
 SIGMA_PROCESS_NOISE = 0.01
 
+## MPC Info
+TIMESTEP_HORIZON = 10
+
 
 
 

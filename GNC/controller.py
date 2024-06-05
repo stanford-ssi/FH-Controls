@@ -4,6 +4,7 @@ from copy import deepcopy, copy
 from Simulator.dynamics import dynamics_for_state_space_control
 from Simulator.simulationConstants import GRAVITY as g
 from GNC.controlConstants import *
+import cvxpy as cvx
 
 def control_rocket(K, state_error, linearized_u):
     """ Function that is called to get control inputs at each time step
@@ -40,6 +41,51 @@ def update_linearization(A_old, B_old, R):
     B[9:12,0:3] = np.dot(R, B[9:12,0:3])
     return A, B
 
+def get_QR_LQR(len_state, len_u):
+    # Q and R
+    Q = np.identity(len_state - 2 + 3) #Minus 2 to remove roll stuff plus 3 to get integral control
+    R = np.identity(len_u)
+
+    Q[0][0] = 1 / (Q_X ** 2)
+    Q[1][1] = 1 / (Q_Y ** 2)
+    Q[2][2] = 1 / (Q_Z ** 2)
+    Q[3][3] = 1 / (Q_VX ** 2)
+    Q[4][4] = 1 / (Q_VY ** 2)
+    Q[5][5] = 1 / (Q_VZ ** 2)
+    Q[6][6] = 1 / (Q_PIT ** 2)
+    Q[7][7] = 1 / (Q_YAW ** 2)
+    Q[8][8] = 1 / (Q_VPIT ** 2)
+    Q[9][9] = 1 / (Q_VYAW ** 2)
+    Q[10][10] = 1 / (Q_X ** 2)
+    Q[11][11] = 1 / (Q_Y ** 2)
+    Q[12][12] = 1 / (Q_Z ** 2)
+    
+    R[0][0] = 1 / (R_X ** 2)
+    R[1][1] = 1 / (R_Y ** 2)
+    R[2][2] = 1 / (R_T ** 2)
+    return Q, R
+
+def get_QR_MPC(len_state, len_u):
+    # Q and R
+    Q = np.identity(len_state) #Minus 2 to remove roll stuff plus 3 to get integral control
+    R = np.identity(len_u)
+
+    Q[0][0] = 1 / (Q_X ** 2)
+    Q[1][1] = 1 / (Q_Y ** 2)
+    Q[2][2] = 1 / (Q_Z ** 2)
+    Q[3][3] = 1 / (Q_VX ** 2)
+    Q[4][4] = 1 / (Q_VY ** 2)
+    Q[5][5] = 1 / (Q_VZ ** 2)
+    Q[6][6] = 1 / (Q_PIT ** 2)
+    Q[7][7] = 1 / (Q_YAW ** 2)
+    Q[9][9] = 1 / (Q_VPIT ** 2)
+    Q[10][10] = 1 / (Q_VYAW ** 2)
+    
+    R[0][0] = 1 / (R_X ** 2)
+    R[1][1] = 1 / (R_Y ** 2)
+    R[2][2] = 1 / (R_T ** 2)
+    return Q, R
+
 def compute_K_flight(len_state, A, B):
     """Compute the K matrix for the flight phase of the mission using lqr
     
@@ -59,27 +105,7 @@ def compute_K_flight(len_state, A, B):
     B = np.delete(B, 11, 0)
     B = np.delete(B, 8, 0)
             
-    # Q and R
-    Q = np.identity(len_state - 2 + 3) #Minus 2 to remove roll stuff plus 3 to get integral control
-    R = np.identity(len(linearized_u))
-
-    Q[0][0] = 1 / (Q_X ** 2)
-    Q[1][1] = 1 / (Q_Y ** 2)
-    Q[2][2] = 1 / (Q_Z ** 2)
-    Q[3][3] = 1 / (Q_VX ** 2)
-    Q[4][4] = 1 / (Q_VY ** 2)
-    Q[5][5] = 1 / (Q_VZ ** 2)
-    Q[6][6] = 1 / (Q_PIT ** 2)
-    Q[7][7] = 1 / (Q_YAW ** 2)
-    Q[8][8] = 1 / (Q_VPIT ** 2)
-    Q[9][9] = 1 / (Q_VYAW ** 2)
-    Q[10][10] = 1 / (Q_X ** 2)
-    Q[11][11] = 1 / (Q_Y ** 2)
-    Q[12][12] = 1 / (Q_Z ** 2)
-    
-    R[0][0] = 1 / (R_X ** 2)
-    R[1][1] = 1 / (R_Y ** 2)
-    R[2][2] = 1 / (R_T ** 2)
+    Q, R = get_QR_LQR(len_state, len(linearized_u))
             
     # Control
     C = np.append(np.identity(3), np.zeros((3, 7)), axis=1) # C is of the form y = Cx, where x is the state and y is the steady state error we care about - in this case just [x y z]
@@ -132,3 +158,46 @@ def compute_B(state, linearized_u, rocket, dt):
         jacobian[i] = (statedot_plus - statedot_minus) / (2 * h)
     return jacobian.T
 
+def do_MPC(A, B, t, ts, tf, current_state, linearized_u, ideal_trajectory):
+    
+    # Get target state at end of time horizon
+    if int(t/ts) + TIMESTEP_HORIZON > int(tf/ts):
+        target_state = ideal_trajectory[-1]
+        steps_until_target = int(tf/ts) - int(t/ts)
+    else:
+        target_state = ideal_trajectory[int(t/ts) + TIMESTEP_HORIZON]
+        steps_until_target = TIMESTEP_HORIZON
+    
+    # Solve open loop optimal control problem
+    n = len(current_state)
+    m = len(linearized_u)
+    N = steps_until_target
+    A = np.eye(12) + A*ts
+    B = B*ts
+    Q, R = get_QR_MPC(n, m)
+    x_mpc = cvx.Variable((N+1, n))
+    u_mpc = cvx.Variable((N, m))
+    objective = 0
+    constraints = [
+        x_mpc[0] == current_state
+        #TODO INPUT CONTROL CONSTRAINTS HERE
+    ]
+    for k in range(steps_until_target):
+        objective += cvx.quad_form(x_mpc[k] - ideal_trajectory[int(t/ts) + k], Q) + cvx.quad_form(u_mpc[k], R)
+        constraints += [
+            x_mpc[k+1] == A@x_mpc[k] + B@u_mpc[k]
+            #TODO INPUT CONTROL CONSTANTS HERE
+        ]
+    
+    prob = cvx.Problem(cvx.Minimize(objective), constraints)
+    prob.solve()
+    status = prob.status
+    if status != 'optimal':
+        raise RuntimeError('MPC solve failed at `t = {}`. Status: '.format(t) + prob.status)
+    # if t>9:
+    #     print(u_mpc.value)
+    #     breakpoint()
+    u = u_mpc.value[0] + linearized_u
+    return u
+    
+    

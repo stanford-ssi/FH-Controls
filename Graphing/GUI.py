@@ -7,6 +7,8 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from Simulator.simulationConstants import *
 from Vehicle.rocketConstants import *
 import math
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.widgets import Slider
 
 def pull_dynamics(trajectory, ts, tf):
     frame=len(trajectory)
@@ -195,8 +197,7 @@ def create_gui(sim, planned_trajectory, trajectory, ts, tf):
     # plot_time_series(time_series, sim.rocket.engine.posx_history[0:len(time_series)])
     # plot_time_series(time_series, sim.u_history[:,0][0:len(time_series)] * -0.05)
     # plt.show()
-    # breakpoint()
-    
+    # breakpoint() 
     
     #Set up tkinter
     root = tk.Tk()
@@ -278,7 +279,7 @@ def create_gui(sim, planned_trajectory, trajectory, ts, tf):
     # Rotational Dynamics
     tab6 = ttk.Frame(notebook)
     rotational_dynamics_plot_names = ["Pitch (degrees)", "Yaw (degrees)", "Roll (degrees)", 
-                                      "Pitch Rate (deg/s)", "Yaw Rate (deg/s)", "Roll Rate (deg/s)", 
+                                      "Wx (deg/s)", "Wy (deg/s)", "Wz (deg/s)", 
                                       "Pitch Acceleration (deg/s2)", "Yaw Acceleration (deg/s2)", "Roll Acceleration (deg/s2)"]
     legend = ["T", "T", "T", "S", "S", "S", "K", "K", "K"]
     create_graph_set(tab6, [x * RAD2DEG for x in true_dynamics[9:18]], ts, tf, rotational_dynamics_plot_names, 9, legend)
@@ -324,7 +325,6 @@ def create_gui(sim, planned_trajectory, trajectory, ts, tf):
     names = ["list of all the names you want the graphs to be titled, one for each graph"]
     create_graph_set(tabn, the data itself, ts, tf, names, number of graphs)
     notebook.add(tabn, text="| tab title |")
-    '''
-                     
+    '''              
     notebook.pack(expand=1.25, fill="both", padx=10, pady=10)
     root.mainloop()

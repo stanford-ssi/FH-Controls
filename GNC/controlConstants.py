@@ -16,8 +16,8 @@ STEP_SIZE = 0.001
 Q_X = 10
 Q_Y = 10
 Q_Z = 0.01
-Q_VX = 0.5
-Q_VY = 0.5
+Q_VX = 0.05
+Q_VY = 0.05
 Q_VZ = 0.02
 Q_PIT = 0.1
 Q_YAW = 0.1
@@ -31,7 +31,7 @@ R_T = 0.075
 SIGMA_PROCESS_NOISE = 0.01
 
 ## MPC Info
-TIMESTEP_HORIZON = 10
+TIMESTEP_HORIZON = 25
 
 
 

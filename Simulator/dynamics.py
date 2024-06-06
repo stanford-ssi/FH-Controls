@@ -138,9 +138,9 @@ def get_EA_dot(state):
     R_inv = np.linalg.inv(R)
     w_gf = np.dot(R_inv, state[9:12])
 
-    wx = state[9]
-    wy = state[10]
-    wz = state[11]
+    wx = w_gf[0]
+    wy = w_gf[1]
+    wz = w_gf[2]
     pitch = state[6]
     yaw = state[7]
     roll = state[8]

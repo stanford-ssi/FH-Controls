@@ -40,7 +40,6 @@ def kalman_filter(x, u, y, A, B, dt, P):
         
 def predict_step(x, u, A, B, P_prev, Q, dt):
     """ Prediction step for kalman filter"""
-
     A_new = np.eye(12) + A*dt
     B_new = B*dt
     x_next = A_new @ x + B_new @ u  #Predicted State Estimate

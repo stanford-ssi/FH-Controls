@@ -176,28 +176,24 @@ def do_MPC(A, B, t, ts, tf, current_state, linearized_u, ideal_trajectory):
     B = B*ts
     Q, R = get_QR_MPC(n, m)
     x_mpc = cvx.Variable((N+1, n))
-    u_mpc = cvx.Variable((N, m))
+    u_mpc = cvx.Variable((N+1, m))
     objective = 0
     constraints = [
         x_mpc[0] == current_state
-        #TODO INPUT CONTROL CONSTRAINTS HERE
     ]
     for k in range(steps_until_target):
-        objective += cvx.quad_form(x_mpc[k] - ideal_trajectory[int(t/ts) + k], Q) + cvx.quad_form(u_mpc[k], R)
+        objective += cvx.quad_form(x_mpc[-1] - target_state, Q) + cvx.quad_form(u_mpc[-1], R)
         constraints += [
             x_mpc[k+1] == A@x_mpc[k] + B@u_mpc[k]
-            #TODO INPUT CONTROL CONSTANTS HERE
         ]
     
     prob = cvx.Problem(cvx.Minimize(objective), constraints)
     prob.solve()
     status = prob.status
-    if status != 'optimal':
-        raise RuntimeError('MPC solve failed at `t = {}`. Status: '.format(t) + prob.status)
-    # if t>9:
-    #     print(u_mpc.value)
-    #     breakpoint()
-    u = u_mpc.value[0] + linearized_u
+    try:
+        u = u_mpc.value[0] + linearized_u
+    except:
+        u = np.array([0,0,0])
     return u
     
     

@@ -169,14 +169,13 @@ class Simulation:
             self.kalman_state_history = np.vstack([self.kalman_state_history, kalman_state])            
             
             # Calculate Errors
-            state_error = state - ideal_trajectory[self.current_step]
+            state_error = kalman_state - ideal_trajectory[self.current_step]
             self.error_history = np.vstack([self.error_history, state_error])
 
             # Call Controller
-            #U = control_rocket(self.K, state_error, self.linearized_u)
-            U = do_MPC(A, B, t, self.ts, self.tf, state, self.linearized_u, ideal_trajectory)
+            U = control_rocket(self.K, state_error, self.linearized_u)
             self.u_history = np.vstack([self.u_history, np.dot(rocket.R, U)]) # Rotated into rocket frame
-                        
+
             # Convert desired accelerations to throttle and gimbal angles
             pos_x, pos_y, throttle = accelerations_2_actuator_positions(U, rocket, t)
             

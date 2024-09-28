@@ -30,31 +30,24 @@ class LinearActuator:
         else:
             return self.X[0][0] 
 
-# def plot_time_series(time_vector, output_vector, clear_plot=False):
-#     """
-#     Plots a time series given a time vector and an output vector.
+########################### Uncomment code below this line and run this file to tune actuator model  ###############################
 
-#     Parameters:
-#         time_vector (list or numpy array): Time vector.
-#         output_vector (list or numpy array): Output vector.
-#         clear_plot (bool): Whether to clear the existing plot before plotting new data.
-#     """
-#     if clear_plot:
-#         plt.clf()
-
-#     plt.plot(time_vector, output_vector)
-#     plt.xlabel('Time')
-#     plt.ylabel('Output')
-#     plt.title('Time Series Plot')
-#     plt.grid(True)
-
-# A = LinearActuator()
+# tf = 2
+# ts = 0.01
+# A = LinearActuator(tf, ts)
 # time = A.T
+# y = []
+# u = []
 # for i in range(len(time)):
-#     u_current = np.sin(time[i])
-#     y = A.get_output(u_current, i)
-
-# plot_time_series(time, y)
+#     u_current = 1#np.sin(2 * time[i]) # Set this line to be the signal you want to track ie step function, sin wave, ect
+#     u.append(u_current)
+#     y.append(A.get_output(u_current, i*ts))
+# plt.plot(time, u)
+# plt.plot(time, y)
+# plt.xlabel('Time')
+# plt.ylabel('Output')
+# plt.title('Time Series Plot')
+# plt.grid(True)
 # plt.show()    
 
      

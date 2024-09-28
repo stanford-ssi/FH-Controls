@@ -33,10 +33,10 @@ def kalman_filter(x, u, y, A, B, dt, P):
     x_next, P_next = predict_step(x, u, A, B, P, Q, dt)
     
     # Measurement Step
-    # z = np.dot(H, x_next) # Expected Measurement based on state
-    # x_fit, P_fit = update_step(x_next, y, z, H, R, P_next)
+    z = np.dot(H, x_next) # Expected Measurement based on state
+    x_fit, P_fit = update_step(x_next, y, z, H, R, P_next)
 
-    return x_next, P_next
+    return x_fit, P_fit
         
 def predict_step(x, u, A, B, P_prev, Q, dt):
     """ Prediction step for kalman filter"""

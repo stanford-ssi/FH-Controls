@@ -6,7 +6,7 @@ from matplotlib.widgets import Slider
 import random
 
 
-def plotVectorsOverTime(bodyAxesX, bodyAxesY, bodyAxesZ, time):
+def plotVectorsOverTime(bodyAxesX, bodyAxesY, bodyAxesZ, engine_thrust, time):
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
@@ -14,6 +14,7 @@ def plotVectorsOverTime(bodyAxesX, bodyAxesY, bodyAxesZ, time):
     quiver_body_axesX = ax.quiver(0, 0, 0, bodyAxesX[0, 0], bodyAxesX[1, 0], bodyAxesX[2, 0], color='c', label='Body Axes X')
     quiver_body_axesY = ax.quiver(0, 0, 0, bodyAxesY[0, 0], bodyAxesY[1, 0], bodyAxesY[2, 0], color='m', label='Body Axes Y')
     quiver_body_axesZ = ax.quiver(0, 0, 0, bodyAxesZ[0, 0], bodyAxesZ[1, 0], bodyAxesZ[2, 0], color='y', label='Body Axes Z')
+    quiver_engine_thrust = ax.quiver(0, 0, 0, engine_thrust[0, 0], engine_thrust[1, 0], engine_thrust[2, 0], color='r', label='Thrust')
 
     ax.set_xlim([-1, 1])  
     ax.set_ylim([-1, 1])
@@ -33,6 +34,7 @@ def plotVectorsOverTime(bodyAxesX, bodyAxesY, bodyAxesZ, time):
         quiver_body_axesX.set_segments([np.array([[0, 0, 0], bodyAxesX[index]])])
         quiver_body_axesY.set_segments([np.array([[0, 0, 0], bodyAxesY[index]])])
         quiver_body_axesZ.set_segments([np.array([[0, 0, 0], bodyAxesZ[index]])])
+        quiver_engine_thrust.set_segments([np.array([[0, 0, 0], engine_thrust[index]])])
 
         ax.set_title('Vectors in 3D Space at Time: {:.2f}'.format(time[index]))
         fig.canvas.draw_idle()
@@ -55,5 +57,12 @@ def extract_columns(matrix):
 def plot_frames_over_time(sim):
     time = np.linspace(0, sim.tf, int(sim.tf/sim.ts)+1)
     bodyAxesX, bodyAxesY, bodyAxesZ = extract_columns(sim.R_history)
+    
+    x = sim.rocket.engine.posx_history
+    y = sim.rocket.engine.posy_history
+    z = -np.sqrt(sim.rocket.engine.throttle_history ** 2 - np.sqrt(x**2 + y**2))
 
-    plotVectorsOverTime(bodyAxesX, bodyAxesY, bodyAxesZ, time)
+    engine_thrust = (np.vstack((x, y, z)).T @ [np.linalg.inv(matrix) for matrix in sim.R_history])[0]
+    
+
+    plotVectorsOverTime(bodyAxesX, bodyAxesY, bodyAxesZ, engine_thrust, time)

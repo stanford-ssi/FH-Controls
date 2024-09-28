@@ -39,7 +39,7 @@ class LinearActuator:
 # y = []
 # u = []
 # for i in range(len(time)):
-#     u_current = 1#np.sin(2 * time[i]) # Set this line to be the signal you want to track ie step function, sin wave, ect
+#     u_current = np.sin(2 * time[i]) # Set this line to be the signal you want to track ie step function, sin wave, ect
 #     u.append(u_current)
 #     y.append(A.get_output(u_current, i*ts))
 # plt.plot(time, u)

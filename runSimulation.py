@@ -3,7 +3,7 @@ from Simulator.simulation import Simulation
 from Simulator.simulationConstants import *
 from Graphing.GUI import *
 from PathPlanner.plan import PlannedTrajectory
-from Graphing.AA279Cplotter import *
+from Graphing.monocole import *
 
 
 # Setup Simulation
@@ -15,8 +15,8 @@ trajectory = sim.propogate()
 sim.display_end_info()
 
 # Graphs
-plot_frames_over_time(sim)
 create_gui(sim, planned_trajectory, trajectory, TIMESTEP, sim.previous_time)
+plot_frames_over_time(sim)
 
 
 

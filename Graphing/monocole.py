@@ -26,6 +26,7 @@ def plotVectorsOverTime(bodyAxesX, bodyAxesY, bodyAxesZ, engine_thrust, time):
     ax.legend()
 
     ax_time = plt.axes([0.1, 0.01, 0.8, 0.03], facecolor='lightgoldenrodyellow')
+
     slider = Slider(ax_time, 'Time', 0, len(time) - 1, valinit=0, valstep=1)
 
     def update(val):
@@ -55,9 +56,9 @@ def extract_columns(matrix):
     
 
 def plot_frames_over_time(sim):
-    time = np.linspace(0, sim.tf, int(sim.tf/sim.ts)+1)
+    time = np.linspace(0, round(sim.previous_time, 1), len(sim.error_history) - 1)
     bodyAxesX, bodyAxesY, bodyAxesZ = extract_columns(sim.R_history)
-    
+
     x = sim.rocket.engine.posx_history
     y = sim.rocket.engine.posy_history
     z = -np.sqrt(sim.rocket.engine.throttle_history ** 2 - np.sqrt(x**2 + y**2))

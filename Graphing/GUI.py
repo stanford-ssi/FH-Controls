@@ -68,7 +68,7 @@ def create_graph_set(tab, var, ts, tf, names, num_graphs, legend, multiple_on_on
             var_ax = plt.subplot(gs[i])
             if multiple_on_one_graph == True:
                 for j in range(len(var)):
-                    plot_graph(var[j], ts, tf, var_ax, legend[i], names[i])
+                    plot_graph(var[j][i], ts, tf, var_ax, legend[j], names[i])
             else:
                 plot_graph(var[i], ts, tf, var_ax, legend[i], names[i])
     except:
@@ -141,7 +141,6 @@ def create_graph_set(tab, var, ts, tf, names, num_graphs, legend, multiple_on_on
     canvas.draw()
     canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
-
 def plot_graph(var, ts, tf, ax, legend, name='INSERT NAME HERE'):
 
     t = np.linspace(0, tf, len(var))
@@ -151,7 +150,6 @@ def plot_graph(var, ts, tf, ax, legend, name='INSERT NAME HERE'):
     ax.set_xlabel("Time")
     ax.set_ylabel(name)
     ax.legend()
-
 
 def plot_landing_graph(tab, title, xdata, ydata, xlabel, ylabel):
     # Create a Matplotlib figure and axis
@@ -190,48 +188,49 @@ def plot_time_series(time_vector, output_vector, clear_plot=False):
     plt.title('Time Series Plot')
     plt.grid(True)
 
-
 def create_gui(sim, planned_trajectory, trajectory, ts, tf):
-    
-    # time_series = np.linspace(0, 3, 30)
-    # plot_time_series(time_series, sim.rocket.engine.posx_history[0:len(time_series)])
-    # plot_time_series(time_series, sim.u_history[:,0][0:len(time_series)] * -0.05)
-    # plt.show()
-    # breakpoint() 
     
     #Set up tkinter
     root = tk.Tk()
     root.title("Simulation Data")
+    width = root.winfo_screenwidth()
+    height = root.winfo_screenheight()
+    root.geometry("%dx%d" % (width, height))
     style = ttk.Style()
-    style.configure("TNotebook.Tab", font=('Helvetica', 20))  # Adjust font size here
-    notebook = ttk.Notebook(root)
+    style.configure("Custom.TNotebook", tabposition='wn', expand=1.25)
+    style.configure("Custom.TNotebook.Tab", font=('Helvetica', 20))
+    notebook = ttk.Notebook(root, style="Custom.TNotebook")
+    notebook.pack(expand=1.25, fill="both", padx=20, pady=20)
 
     #Get data
-    true_dynamics = pull_dynamics(trajectory, ts, tf)
-    sensed_positional_dynamics, sensed_rotational_dynamics = pull_sensed_dynamics(sim.sensed_state_history, ts, tf)
-    kalman_dynamics = pull_dynamics(sim.kalman_state_history, ts, tf)
+    true_dynamics = pull_dynamics(sim.rocket.state_history, ts, tf)
+    ffc_dynamics = pull_dynamics(sim.rocket.ffc.state_history, ts, tf)
+    sensed_positional_dynamics, sensed_rotational_dynamics = pull_sensed_dynamics(sim.rocket.ffc.sensed_state_history, ts, tf)
+    kalman_dynamics = pull_dynamics(sim.rocket.ffc.state_history, ts, tf)
 
     # Altitude vs Time
     tab0 = ttk.Frame(notebook)
-    legend = ["T"]
-    create_graph_set(tab0, [trajectory[:,2]], ts, tf, ["Altitude"], 1, legend, multiple_on_one_graph=True)
-    notebook.add(tab0, text="| ALTITUDE |")
+    legend = ["Truth", "ffc"]
+    create_graph_set(tab0, [[sim.rocket.state_history[:,2]], [sim.rocket.ffc.state_history[:,2]]], ts, tf, ["Altitude"], 1, legend, multiple_on_one_graph=True)
+    notebook.add(tab0, text="Altitude")
 
     # Position Error
     tab1 = ttk.Frame(notebook)
-    position_error = [sim.error_history[:,0], sim.error_history[:,1], sim.error_history[:,2]]
+    position_error = [sim.rocket.error_history[:,0], sim.rocket.error_history[:,1], sim.rocket.error_history[:,2]]
+    ffc_position_error = [sim.rocket.ffc.error_history[:,0], sim.rocket.ffc.error_history[:,1], sim.rocket.ffc.error_history[:,2]]
     error_names = ["X Error (m)", "Y Error (m)", "Z Error (m)"]
-    legend = ["T", "T", "T"]
-    create_graph_set(tab1, position_error, ts, tf, error_names, 3, legend)
-    notebook.add(tab1, text="| Position Error |")
+    legend = ["Truth", "ffc"]
+    create_graph_set(tab1, [position_error, ffc_position_error], ts, tf, error_names, 3, legend, multiple_on_one_graph=True)
+    notebook.add(tab1, text="Position Error")
 
     # Rotation Error
     tab2 = ttk.Frame(notebook)
-    rotation_error = [sim.error_history[:,6] * RAD2DEG, sim.error_history[:,7] * RAD2DEG, sim.error_history[:,8] * RAD2DEG]
+    rotation_error = [sim.rocket.error_history[:,6] * RAD2DEG, sim.rocket.error_history[:,7] * RAD2DEG, sim.rocket.error_history[:,8] * RAD2DEG]
+    ffc_rotation_error = [sim.rocket.ffc.error_history[:,6] * RAD2DEG, sim.rocket.ffc.error_history[:,7] * RAD2DEG, sim.rocket.ffc.error_history[:,8] * RAD2DEG]
     rot_error_names = ["Pitch Error (degrees)", "Yaw Error (degrees)", "Roll Error (degrees)"]
-    legend = ["T", "T", "T"]
-    create_graph_set(tab2, rotation_error, ts, tf, rot_error_names, 3, legend)
-    notebook.add(tab2, text="| Rotation Error |")
+    legend = ["Truth", "Truth", "Truth"]
+    create_graph_set(tab2, [rotation_error, ffc_rotation_error], ts, tf, rot_error_names, 3, legend, multiple_on_one_graph=True)
+    notebook.add(tab2, text="Rotation Error")
     
     # Controls
     tab3 = ttk.Frame(notebook)
@@ -239,64 +238,64 @@ def create_gui(sim, planned_trajectory, trajectory, ts, tf):
     gimbal_psi = np.arctan2(np.sqrt((sim.rocket.engine.posx_history ** 2) + (sim.rocket.engine.posy_history ** 2)), sim.rocket.engine.length) * RAD2DEG
     controls = [gimbal_psi, gimbal_theta, sim.rocket.engine.throttle_history]
     control_names = ["Gimbal Psi (degrees)", "Gimbal Theta (degrees)", "Throttle (percent)"]
-    legend = ["T", "T", "T"]
+    legend = ["Truth", "Truth", "Truth"]
     create_graph_set(tab3, controls, ts, tf, control_names, 3, legend)
-    notebook.add(tab3, text="| Control Angles |")
+    notebook.add(tab3, text="Gimbal Angles")
     
         # Controls 2
     tab8 = ttk.Frame(notebook)
     controls = [sim.rocket.engine.posx_history, sim.rocket.engine.posy_history, sim.rocket.engine.throttle_history]
     control_names = ["PosX (m)", "PosY (m)", "Throttle (percent)"]
-    legend = ["T", "T", "T"]
+    legend = ["Truth", "Truth", "Truth"]
     create_graph_set(tab8, controls, ts, tf, control_names, 3, legend)
-    notebook.add(tab8, text="| Control Inputs |")
+    notebook.add(tab8, text="Gimbal Positions")
     
     # Controls 3
     tab12 = ttk.Frame(notebook)
-    controls = [sim.u_history[:,0], sim.u_history[:,1], sim.u_history[:,2]]
+    controls = [sim.rocket.ffc.u_history[:,0], sim.rocket.ffc.u_history[:,1], sim.rocket.ffc.u_history[:,2]]
     control_names = ["Ux (m/s^2)", "Uy (m/s^2)", "Uz (m/s^2)"]
-    legend = ["T", "T", "T"]
+    legend = ["ffc", "ffc", "ffc"]
     create_graph_set(tab12, controls, ts, tf, control_names, 3, legend)
-    notebook.add(tab12, text="| Control Inputs (U) |")
+    notebook.add(tab12, text="Control Inputs (U)")
     
     # MOI
     tab4 = ttk.Frame(notebook)
     moi = [[arr[0,0] for arr in sim.rocket.I_history], [arr[1,1] for arr in sim.rocket.I_history], [arr[2,2] for arr in sim.rocket.I_history]]
     moi_names = ["Ixx (kgm2)", "Iyy (kgm2)", "Izz (kgm2)"]
-    legend = ["T", "T", "T"]
+    legend = ["Truth", "Truth", "Truth"]
     create_graph_set(tab4, moi, ts, tf, moi_names, 3, legend)
-    notebook.add(tab4, text="| Moments of Inertia |")
+    notebook.add(tab4, text="MOI")
 
     # Dynamics
     tab5 = ttk.Frame(notebook)
     dynamics_plot_names = ["X Position (m)", "Y Position (m)", "Z Position (m)", 
                            "X Velocity (m/s)", "Y Velocity (m/s)", "Z Velocity (m/s)", 
                            "X Acceleration (m/s2)", "Y Acceleration (m/s2)", "Z Acceleration (m/s2)"]
-    legend = ["T", "T", "T", "S", "S", "S", "K", "K", "K"]
-    create_graph_set(tab5, true_dynamics[0:9], ts, tf, dynamics_plot_names, 9, legend)
-    notebook.add(tab5, text="| Dynamics |")
+    legend = ["Truth", "ffc"]
+    create_graph_set(tab5, [true_dynamics[0:9], ffc_dynamics[0:9]], ts, tf, dynamics_plot_names, 9, legend)
+    notebook.add(tab5, text="Dynamics")
 
     # Rotational Dynamics
     tab6 = ttk.Frame(notebook)
     rotational_dynamics_plot_names = ["Pitch (degrees)", "Yaw (degrees)", "Roll (degrees)", 
                                       "Wx (deg/s)", "Wy (deg/s)", "Wz (deg/s)", 
                                       "Pitch Acceleration (deg/s2)", "Yaw Acceleration (deg/s2)", "Roll Acceleration (deg/s2)"]
-    legend = ["T", "T", "T", "S", "S", "S", "K", "K", "K"]
-    create_graph_set(tab6, [x * RAD2DEG for x in true_dynamics[9:18]], ts, tf, rotational_dynamics_plot_names, 9, legend)
-    notebook.add(tab6, text="| Rotational Dynamics |")
+    legend = ["Truth","ffc"]
+    create_graph_set(tab6, [[x * RAD2DEG for x in true_dynamics[9:18]], [x * RAD2DEG for x in ffc_dynamics[9:18]]], ts, tf, rotational_dynamics_plot_names, 9, legend)
+    notebook.add(tab6, text="Rotational Dynamics")
     
     # Wind
     tab7 = ttk.Frame(notebook)
     rotational_dynamics_plot_names = ["Pitch", "Yaw", "Roll", "Pitch Rate", "Yaw Rate", "Roll Rate", "Pitch Acceleration", "Yaw Acceleration", "Roll Acceleration"]
-    legend = ["T"]
+    legend = ["Truth"]
     create_graph_set(tab7, [np.linalg.norm(sim.wind_history, axis=1), sim.rocket.engine.posx_history * 10, sim.rocket.engine.posy_history * 10, sim.rocket.engine.throttle_history], ts, tf, ["Wind"], 1, legend)
-    notebook.add(tab7, text="| Wind |")
+    notebook.add(tab7, text="Wind")
 
     # Landing
     tab9 = ttk.Frame(notebook)
     if sim.landed == True:
-        plot_landing_graph(tab9, "Landing Position", sim.error_history[-1,0], sim.error_history[-1, 1], "X Position (m)", "Y Position (m)")
-        notebook.add(tab9, text="| Landing |")
+        plot_landing_graph(tab9, "Landing Position", sim.rocket.error_history[-1,0], sim.rocket.error_history[-1, 1], "X Position (m)", "Y Position (m)")
+        notebook.add(tab9, text="Landing")
         
     # Sensors
     tab10 = ttk.Frame(notebook)
@@ -306,7 +305,7 @@ def create_gui(sim, planned_trajectory, trajectory, ts, tf):
     legend = ["T", "K"]
 
     create_graph_set(tab10, [true_dynamics[0:9], kalman_dynamics[0:9]], ts, tf, dynamics_plot_names, 9, legend, sensors=sensed_positional_dynamics)
-    notebook.add(tab10, text="| Sensed Dynamics |")
+    notebook.add(tab10, text="Sensed Dynamics")
     
     # Sensors
     tab11 = ttk.Frame(notebook)
@@ -316,7 +315,7 @@ def create_gui(sim, planned_trajectory, trajectory, ts, tf):
     legend = ["T", "K"]
     create_graph_set(tab11, [[x * RAD2DEG for x in true_dynamics[9:18]], [x * RAD2DEG for x in kalman_dynamics[9:18]]], ts, tf, dynamics_plot_names, 9, legend, 
                      sensors=sensed_rotational_dynamics)
-    notebook.add(tab11, text="| Sensed Rotations |")
+    notebook.add(tab11, text="Sensed Rotations")
     
     '''
     To add new graphs use the following format:
@@ -326,5 +325,4 @@ def create_gui(sim, planned_trajectory, trajectory, ts, tf):
     create_graph_set(tabn, the data itself, ts, tf, names, number of graphs)
     notebook.add(tabn, text="| tab title |")
     '''              
-    notebook.pack(expand=1.25, fill="both", padx=10, pady=10)
     root.mainloop()

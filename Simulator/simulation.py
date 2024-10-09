@@ -1,34 +1,27 @@
 import numpy as np
+import os
 import scipy.integrate
 import Vehicle.engine
 import Vehicle.rocket
 import control as ct
 from Vehicle.sensors import *
-from GNC.constraints import *
-from GNC.controller import *
-from GNC.kalmanFilter import *
+from Simulator.constraints import *
 from scipy.spatial.transform import Rotation
 from Simulator.dynamics import *
 from Simulator.errorInjection import *
 from Simulator.simulationConstants import GRAVITY as g
 from Simulator.simulationConstants import RHO as rho
 from scipy.spatial.transform import Rotation
-import copy
+from termcolor import colored
 
 class Simulation:
     """ Class Representing the Simulation and associated data"""
     def __init__(self, timefinal, simulation_timestep, starting_state, wind, planned_trajectory):
         
         # Create Rocket Object
-        self.rocket = Vehicle.rocket.Rocket(simulation_timestep)
-        
-        # States and Histories
-        self.state = roll_injection(starting_state)
-        self.state_previous = copy.copy(self.state)
-        self.statedot_previous = np.zeros(len(starting_state))
+        self.rocket = Vehicle.rocket.Rocket(simulation_timestep, planned_trajectory, starting_state)
         self.ideal_trajectory = planned_trajectory
-        self.error_history = np.empty((0,len(starting_state)))
-        self.R_history = np.array([Rotation.from_euler('xyz', [starting_state[7], -starting_state[6], -starting_state[8]]).as_matrix()])
+        self.state = roll_injection(starting_state)
         
         # Simulation Variables
         self.ts = simulation_timestep
@@ -42,18 +35,6 @@ class Simulation:
         self.wind_history = np.empty((0,len(wind)))
         self.base_wind = np.array([np.random.normal(0, wind[0]), np.random.normal(0, wind[1]), np.random.normal(0, wind[2])])
         self.current_wind = self.base_wind
-        
-        # Preform initial controller calculations
-        self.u_history = np.empty((0,3))
-        self.linearized_x = np.array([0,0,0,0,0,0,0,0,0,0,0,0])
-        self.linearized_u = np.array([0, 0, g])
-        self.A_orig = compute_A(self.linearized_x, self.linearized_u, self.rocket, self.ts)
-        self.B_orig = compute_B(self.linearized_x, self.linearized_u, self.rocket, self.ts)
-        
-        # Sensors:
-        self.sensed_state_history = np.empty((0,16))
-        self.kalman_state_history = np.empty((0,len(starting_state)))
-        self.kalman_P = np.eye(12)
 
     def propogate(self):
         """ Simple propogator
@@ -88,27 +69,34 @@ class Simulation:
                     return y[2]
         event.terminal=True
         event.direction=-1
-        solution = scipy.integrate.solve_ivp(self.wrapper_state_to_stateDot, t, state, args=(self.rocket, self.ideal_trajectory, t_span), t_eval=t_span, max_step=ts/5, events=event)
-        state_history = solution['y'].T
+        try:
+            solution = scipy.integrate.solve_ivp(self.wrapper_state_to_stateDot, t, state, args=(self.rocket, self.ideal_trajectory, t_span), t_eval=t_span, max_step=ts/5, events=event)
+            state_history = solution['y'].T
+        except:
+            state_history = self.rocket.state_history
+            
         return state_history
 
     def display_end_info(self):
         """ Display ending info about the simulation into the terminal"""
         
-        print()
-        print("Simulation Ended at t = ", self.previous_time, "s, at simulation step ", self.current_step)
+        os.system('color')
         print()
         if self.landed:
-            print("Sucsessful Execution of Planned Trajectory and Landing")
+            print(colored("Sucsessful Execution of Planned Trajectory and Landing", "green"))
         else:
-            print("VEHICLE CRASH DETECTED")
-            print("Landing Condition Violation: ", self.landing_violation)
+            if self.landing_violation:
+                print(colored("Landing Condition Violation: ", "red"))
+                print(self.landing_violation)
+            else:
+                print(colored("Vehicle Crash Detected", "red"))
+        
+        print()
+        print("Simulation Ended at t = ", self.previous_time, "s, at simulation step ", self.current_step)
         print()
         print("Rocket Start Mass: ", self.rocket.massHistory[0], "kg | End Mass: ", self.rocket.mass)
         print("Engine Start Mass: ", self.rocket.engine.full_mass, "kg | End Mass: ", self.rocket.engine.mass)
         print("Percent Fuel Remaining: ", (1 - (self.rocket.engine.full_mass - self.rocket.engine.mass) / (self.rocket.engine.full_mass - self.rocket.engine.drymass)) * 100, "%")
-        print()
-        print("State: ", self.state)
         print()
 
     def check_landing(self, state, t):
@@ -141,64 +129,22 @@ class Simulation:
         control inputs and fuel drain."""
         # Check if we are on an actual simulation timestep or if this is ode solving shenanigans
         if (t == 0) or (t >= t_vec[self.current_step] and self.previous_time < t_vec[self.current_step]):
+            
+            rocket.state = state
 
-            # Log Rocket Rotation                  
-            rocket.R = Rotation.from_euler('xyz', [state[7], -state[6], -state[8]]).as_matrix()
-            self.R_history = np.vstack((self.R_history, np.expand_dims(rocket.R.T, axis=0)))                  
-              
             # Determine wind at this moment in time
             self.current_wind = wind_randomness(self.base_wind, self.current_wind)
             self.wind_history = np.vstack([self.wind_history, self.current_wind])
-            
-            # Pre Control Work - Rotate State Matrices into current frame                 
-            A = compute_A(state, self.linearized_u, self.rocket, self.ts)
-            B = compute_B(state, self.linearized_u, self.rocket, self.ts) 
-            self.K = compute_K_flight(len(self.state), A, B)
-       
 
-            # Sense the state from sensors
-            Y = np.concatenate((rocket.gps.reading(state, t), 
-                                rocket.barometer.reading(state, t),
-                                rocket.accelerometer.reading(state, self.statedot_previous[3:6], t),
-                                rocket.magnetometer.reading(state, t),
-                                rocket.gyroscope.reading(state, t)), axis=None)
-            self.sensed_state_history = np.vstack([self.sensed_state_history, Y])
+            rocket.ffc.rocket_loop(t, self.current_step)
+            rocket.update_truth_side(t, self.ts, self.current_step)
             
-            kalman_state, self.kalman_P = kalman_filter(state if t > 0 else np.zeros(len(state)), self.statedot_previous[3:6], 
-                                                        Y, A, B, self.ts, P=self.kalman_P)
-            self.kalman_state_history = np.vstack([self.kalman_state_history, kalman_state])            
-            
-            # Calculate Errors
-            state_error = kalman_state - ideal_trajectory[self.current_step]
-            self.error_history = np.vstack([self.error_history, state_error])
-
-            # Call Controller
-            U = control_rocket(self.K, state_error, self.linearized_u)
-            self.u_history = np.vstack([self.u_history, np.dot(rocket.R, U)]) # Rotated into rocket frame
-
-            # Convert desired accelerations to throttle and gimbal angles
-            pos_x, pos_y, throttle = accelerations_2_actuator_positions(U, rocket, t)
-            
-            # Inject Error to actuator positions
-            pos_x, pos_y, throttle = actuator_error_injection(pos_x, pos_y, throttle)
-                        
-            # Perform actuator constraint checks
-            if not t == 0:
-                throttle = throttle_checks(throttle, rocket.engine.throttle_history[-1], self.ts)
-                pos_x = pos_checks(pos_x, rocket.engine.posx_history[-1], self.ts)
-                pos_y = pos_checks(pos_y, rocket.engine.posy_history[-1], self.ts)
-            
-            # Log Current States
-            rocket.update_rocket(throttle, pos_x, pos_y, t)
-
-            ################ END LOOP ON ROCKET ##################
-
             if not t == t_vec[-1]:
                 self.current_step += 1
             self.previous_time = t
             
             # Check for landing
-            self.check_landing(state, t)
+            self.check_landing(rocket.state, t)
         
-        self.statedot_previous = full_dynamics(state, rocket, self.current_wind, self.ts, t)
+        self.statedot_previous = full_dynamics(rocket.state, rocket, self.current_wind, self.ts, t)
         return self.statedot_previous

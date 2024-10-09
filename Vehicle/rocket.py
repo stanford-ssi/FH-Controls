@@ -8,12 +8,14 @@ from scipy.interpolate import interp1d
 from Vehicle.sensors import *
 from Simulator.simulationConstants import *
 from Vehicle.ActuatorModel import *
+from scipy.spatial.transform import Rotation
+from Vehicle.computer import *
 
 
 class Rocket:
     """ Class Representing the Rocket and associated data"""
 
-    def __init__(self, simulation_timestep):
+    def __init__(self, simulation_timestep, planned_trajectory, starting_state):
         # Create Engine Object inside Rocket
         self.dt = simulation_timestep
         self.engine = Vehicle.engine.Engine(simulation_timestep)
@@ -34,7 +36,16 @@ class Rocket:
         self.I_history = []
         
         # Initialize the rocket's rotation matrix
+        self.R_history = np.array([Rotation.from_euler('xyz', [starting_state[7], -starting_state[6], -starting_state[8]]).as_matrix()])
         self.R = None
+        
+        # Truth States and Histories
+        self.state = roll_injection(starting_state)
+        self.state_history = np.empty((0,len(self.state)))
+        self.state_previous = copy.copy(self.state)
+        self.statedot_previous = np.zeros(len(starting_state))
+        self.error_history = np.empty((0,len(starting_state)))
+        self.ideal_trajectory = planned_trajectory
         
         # Create Sensors
         self.accelerometer = Accelerometer(INITIAL_STATE)
@@ -46,6 +57,9 @@ class Rocket:
         # Create Linear Actuators
         self.actuator_X = LinearActuator(FINAL_TIME, TIMESTEP)
         self.actuator_Y = LinearActuator(FINAL_TIME, TIMESTEP)
+        
+        # Create Flight Computer
+        self.ffc = FlightComputer(starting_state, planned_trajectory, self, self.dt)
         
     def build_rocket(self, components):
         ''' Takes in list of parts from rocket constants and build rocket'''
@@ -99,8 +113,31 @@ class Rocket:
             total_mass  # calculate overall center-of-mass
         return rocket_center_of_mass
 
-    def update_rocket(self, throttle, pos_x, pos_y, t):
+    def update_truth_side(self, t, ts, current_step):
         ''' Run all the functions needed to update the rocket at a new timestep'''
+        
+        self.state_history = np.vstack([self.state_history, self.state])   
+        
+        # Log Rocket Rotation                  
+        self.R = Rotation.from_euler('xyz', [self.state[7], -self.state[6], -self.state[8]]).as_matrix()
+        self.R_history = np.vstack((self.R_history, np.expand_dims(self.R.T, axis=0)))
+        
+        # Calculate Errors
+        state_error = self.state - self.ideal_trajectory[current_step]
+        self.error_history = np.vstack([self.error_history, state_error])            
+        
+        # Convert desired accelerations to throttle and gimbal angles
+        pos_x, pos_y, throttle = accelerations_2_actuator_positions(self.ffc.U, self, t)
+        
+        # Inject Error to actuator positions
+        pos_x, pos_y, throttle = actuator_error_injection(pos_x, pos_y, throttle)
+                    
+        # Perform actuator constraint checks
+        if not t == 0:
+            throttle = throttle_checks(throttle, self.engine.throttle_history[-1], ts)
+            pos_x = pos_checks(pos_x, self.engine.posx_history[-1], ts)
+            pos_y = pos_checks(pos_y, self.engine.posy_history[-1], ts)
+        
         self.update_fuels()
         self.engine.save_throttle(throttle)
         self.engine.save_posX(pos_x)

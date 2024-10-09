@@ -56,14 +56,14 @@ def extract_columns(matrix):
     
 
 def plot_frames_over_time(sim):
-    time = np.linspace(0, round(sim.previous_time, 1), len(sim.error_history) - 1)
-    bodyAxesX, bodyAxesY, bodyAxesZ = extract_columns(sim.R_history)
+    time = np.linspace(0, round(sim.previous_time, 1), len(sim.rocket.error_history) - 1)
+    bodyAxesX, bodyAxesY, bodyAxesZ = extract_columns(np.linalg.inv(sim.rocket.R_history))
 
     x = sim.rocket.engine.posx_history
     y = sim.rocket.engine.posy_history
     z = -np.sqrt(sim.rocket.engine.throttle_history ** 2 - np.sqrt(x**2 + y**2))
 
-    engine_thrust = (np.vstack((x, y, z)).T @ [np.linalg.inv(matrix) for matrix in sim.R_history])[0]
+    engine_thrust = (np.vstack((x, y, z)).T @ [np.linalg.inv(matrix) for matrix in sim.rocket.R_history])[0]
     
 
     plotVectorsOverTime(bodyAxesX, bodyAxesY, bodyAxesZ, engine_thrust, time)

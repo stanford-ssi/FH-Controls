@@ -116,13 +116,17 @@ def landing_graph(tab, title, xdata, ydata, xlabel, ylabel, num_suc, num_total):
     canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
 def create_group_gui(sims, planned_trajectory, trajectories, ts, tf):
+    #Set up tkinter
     root = tk.Tk()
     root.title("Simulation Data")
-
+    width = root.winfo_screenwidth()
+    height = root.winfo_screenheight()
+    root.geometry("%dx%d" % (width, height))
     style = ttk.Style()
-    style.configure("TNotebook.Tab", font=('Helvetica', 20))  # Adjust font size here
-
-    notebook = ttk.Notebook(root)
+    style.configure("Custom.TNotebook", tabposition='wn', expand=1.25)
+    style.configure("Custom.TNotebook.Tab", font=('Helvetica', 20))
+    notebook = ttk.Notebook(root, style="Custom.TNotebook")
+    notebook.pack(expand=1.25, fill="both", padx=20, pady=20)
 
     # Altitude vs Time
     tab0 = ttk.Frame(notebook)
@@ -130,14 +134,14 @@ def create_group_gui(sims, planned_trajectory, trajectories, ts, tf):
     notebook.add(tab0, text="| ALTITUDE |")
 
     # Position Error
-    position_error = [[sim.error_history[:,0] for sim in sims if sim.landed == True], [sim.error_history[:,1] for sim in sims if sim.landed == True], [sim.error_history[:,2] for sim in sims if sim.landed == True]]
+    position_error = [[sim.rocket.error_history[:,0] for sim in sims if sim.landed == True], [sim.rocket.error_history[:,1] for sim in sims if sim.landed == True], [sim.rocket.error_history[:,2] for sim in sims if sim.landed == True]]
     error_names = ["X Error (m)", "Y Error (m)", "Z Error (m)"]
     tab1 = ttk.Frame(notebook)
     create_3_graph(tab1, position_error, ts, tf, error_names, "Position Error")
     notebook.add(tab1, text="| Position Error |")
 
     # # Rotation Error
-    rotation_error = [[sim.error_history[:,6] * RAD2DEG for sim in sims if sim.landed == True], [sim.error_history[:,7] * RAD2DEG for sim in sims if sim.landed == True], [sim.error_history[:,8] * RAD2DEG for sim in sims if sim.landed == True]]
+    rotation_error = [[sim.rocket.error_history[:,6] * RAD2DEG for sim in sims if sim.landed == True], [sim.rocket.error_history[:,7] * RAD2DEG for sim in sims if sim.landed == True], [sim.rocket.error_history[:,8] * RAD2DEG for sim in sims if sim.landed == True]]
     rot_error_names = ["Pitch Error (degrees)", "Yaw Error (degrees)", "Roll Error (degrees)"]
     tab2 = ttk.Frame(notebook)
     create_3_graph(tab2, rotation_error, ts, tf, rot_error_names, "Rotation Error")
@@ -192,12 +196,12 @@ def create_group_gui(sims, planned_trajectory, trajectories, ts, tf):
     for sim in sims:
         if sim.landed==True:
             num_landed+=1
-    landing_graph(tab9, "Landing Position", [sim.error_history[-1,0] for sim in sims if sim.landed==True], [sim.error_history[-1, 1] for sim in sims if sim.landed==True], "X Position (m)", "Y Position (m)", num_landed, len(sims))
+    landing_graph(tab9, "Landing Position", [sim.rocket.error_history[-1,0] for sim in sims if sim.landed==True], [sim.rocket.error_history[-1, 1] for sim in sims if sim.landed==True], "X Position (m)", "Y Position (m)", num_landed, len(sims))
     notebook.add(tab9, text="| Landing |")
     
     # U
     tab10 = ttk.Frame(notebook)
-    Us = [[sim.u_history[:,0] for sim in sims if sim.landed == True], [sim.u_history[:,1] for sim in sims if sim.landed == True], [sim.u_history[:,2] for sim in sims if sim.landed == True]]
+    Us = [[sim.rocket.ffc.u_history[:,0] for sim in sims if sim.landed == True], [sim.rocket.ffc.u_history[:,1] for sim in sims if sim.landed == True], [sim.rocket.ffc.u_history[:,2] for sim in sims if sim.landed == True]]
     control_names = ["UX", "UY", "UZ"]
     for sim in sims:
         if sim.landed==True:

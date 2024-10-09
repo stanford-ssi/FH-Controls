@@ -6,62 +6,6 @@ from Simulator.simulationConstants import RHO as rho
 from Simulator.simulationConstants import *
 from Simulator.errorInjection import *
 
-def dynamics_for_state_space_control(state, rocket, dt, acc_x, acc_y, acc_z):
-    """ These are the dynamics used during the linearization for the controller. It is the same as the regular dynamics,
-        except it does not include wind forces, and assumes that the accelerations are given
-        
-        Inputs:
-        - rocket object
-        - timestep length
-        - Accelerations in x, y and z
-        
-        Outputs:
-        - statedot vector (1x12)
-        """
-    # Pull Params
-    m = rocket.mass
-    lever_arm = rocket.com
-    v = state[3:6]
-    w = state[9:12]
-    
-    # Build Statedot
-    statedot = np.zeros(len(state))
-    statedot[0:3] = v
-    
-    # Rocket rotations
-    pitch = state[6] # Angle from rocket from pointing up towards positive x axis
-    yaw = state[7] # Angle from rocket from pointing up towards positive y axis
-    roll = state[8] # Roll, ccw when looking down on rocket
-    R = Rotation.from_euler('xyz', [yaw, -pitch, -roll]).as_matrix()
-    R_inv = np.linalg.inv(R)
-    
-    # Acceleration rotation into rocket frame
-    acc = np.array([acc_x, acc_y, acc_z])
-    acc_rf = np.dot(R, acc)
-
-    # Calculate Accelerations in rocket frame
-    aX_rf = acc_rf[0] + (-1 * g * R[0][2])
-    aY_rf = acc_rf[1] + (-1 * g * R[1][2])
-    aZ_rf = acc_rf[2] + (-1 * g * R[2][2])
-    a_rf = np.array([aX_rf, aY_rf, aZ_rf])
-
-    # Convert Accelerations from rocket frame to global frame
-    a_global = np.dot(R_inv, a_rf)
-
-    # Calculate Alphas
-    torque = np.array([(acc_rf[0] * m * lever_arm),
-                        (acc_rf[1] * m * lever_arm),
-                        0])
-    I_dot = (rocket.I - rocket.I_prev) / dt
-    alphas = np.dot(np.linalg.inv(rocket.I), torque - np.cross(w, np.dot(rocket.I, w)) - np.dot(I_dot, w))
-
-    statedot[3:6] = a_global.tolist()
-    statedot[9:12] = alphas.tolist()
-    
-    # Rotational Kinematics
-    statedot[6:9] = get_EA_dot(state)
-    return statedot
-    
 def full_dynamics(state, rocket, wind, dt, t):
     """ These are the dynamics used during simulation. It is the full dynamics including wind.
         

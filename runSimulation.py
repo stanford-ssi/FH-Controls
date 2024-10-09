@@ -20,4 +20,3 @@ plot_frames_over_time(sim)
 
 
 
-

@@ -28,10 +28,16 @@ def kalman_filter(x, u, y, A, B, dt, P):
     ]) 
   
     R = np.eye(16)
+    R[0,0] = 10
+    R[1,1] = 10
+    R[2,2] = 10
+    R[3,3] = 10
+    R[4,4] = 10
+    R[5,5] = 100
+    R[6,6] = 10
     
-    # Time Step
+    # # Time Step
     x_next, P_next = predict_step(x, u, A, B, P, Q, dt)
-    
     # Measurement Step
     z = np.dot(H, x_next) # Expected Measurement based on state
     x_fit, P_fit = update_step(x_next, y, z, H, R, P_next)

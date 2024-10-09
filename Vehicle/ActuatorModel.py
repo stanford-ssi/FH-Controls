@@ -7,7 +7,7 @@ class LinearActuator:
     def __init__(self, tf, ts):
         # Source: Feiler2003 
         K = 1
-        T = 0.1
+        T = 0.01
 
         # Create Transfer function
         n = [K]

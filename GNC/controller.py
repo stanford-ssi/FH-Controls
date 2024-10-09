@@ -1,10 +1,11 @@
 import numpy as np
 import control
 from copy import deepcopy, copy
-from Simulator.dynamics import dynamics_for_state_space_control
+from Simulator.dynamics import *
 from Simulator.simulationConstants import GRAVITY as g
 from GNC.controlConstants import *
 import cvxpy as cvx
+from Vehicle.computer import *
 
 def control_rocket(K, state_error, linearized_u):
     """ Function that is called to get control inputs at each time step
@@ -95,44 +96,14 @@ def compute_K_flight(len_state, A, B):
     
     return K
 
-def compute_A(state, u, rocket, dt):
-    """ Compute Jacobian for the A matrix (State dot wrt State)
-    
-    Inputs:
-    - state (1x12)
-    - Control input U (1x3)
-    - rocket object
-    - timestep length
-    """
-    h = STEP_SIZE
-    jacobian = np.zeros((len(state), len(state)))
-    for i in range(len(state)):
-        state_plus = deepcopy(state).astype(float)
-        state_minus = deepcopy(state).astype(float)
-        state_plus[i] = state_plus[i] + h
-        state_minus[i] = state_minus[i] - h
-        statedot_plus = dynamics_for_state_space_control(state_plus, rocket, dt, u[0], u[1], u[2])
-        statedot_minus = dynamics_for_state_space_control(state_minus, rocket, dt, u[0], u[1], u[2])
-        jacobian[i] = (statedot_plus - statedot_minus) / (2 * h)
-    return jacobian.T
+def low_pass_filter(signal, previous_signal_filtered, alpha):
+    filtered_value = alpha * signal + (1 - alpha) * previous_signal_filtered
+    return filtered_value
 
-def compute_B(state, linearized_u, rocket, dt):
-    """ Compute Jacobian for the B matrix (State dot wrt control input)
-    
-    Inputs:
-    - state (1x12)
-    - Control input U (1x3)
-    - rocket object
-    - timestep length
-    """
-    h = STEP_SIZE
-    jacobian = np.zeros((len(linearized_u), len(state)))
-    for i in range(len(linearized_u)):
-        u_plus = deepcopy(linearized_u).astype(float)
-        u_minus = deepcopy(linearized_u).astype(float)
-        u_plus[i] = linearized_u[i] + h
-        u_minus[i] = linearized_u[i] - h
-        statedot_plus = dynamics_for_state_space_control(state, rocket, dt, u_plus[0], u_plus[1], u_plus[2])
-        statedot_minus = dynamics_for_state_space_control(state, rocket, dt, u_minus[0], u_minus[1], u_minus[2])
-        jacobian[i] = (statedot_plus - statedot_minus) / (2 * h)
-    return jacobian.T
+def clean_control_signal(t, U, u_history):
+    if not t == 0:
+        U[0] = low_pass_filter(U[0], u_history[-1][0], 1)
+        U[1] = low_pass_filter(U[1], u_history[-1][1], 1)
+        U[2] = low_pass_filter(U[2], u_history[-1][2], 0.75)
+        
+    return U

@@ -5,9 +5,7 @@ import Vehicle.engine
 import Vehicle.rocket
 import control as ct
 from Vehicle.sensors import *
-from GNC.constraints import *
-from GNC.controller import *
-from GNC.kalmanFilter import *
+from Simulator.constraints import *
 from scipy.spatial.transform import Rotation
 from Simulator.dynamics import *
 from Simulator.errorInjection import *
@@ -76,7 +74,7 @@ class Simulation:
             state_history = solution['y'].T
         except:
             state_history = self.rocket.state_history
-        
+            
         return state_history
 
     def display_end_info(self):
@@ -138,7 +136,7 @@ class Simulation:
             self.current_wind = wind_randomness(self.base_wind, self.current_wind)
             self.wind_history = np.vstack([self.wind_history, self.current_wind])
 
-            rocket.ffc.rocket_loop(t, self.ts, self.current_step)
+            rocket.ffc.rocket_loop(t, self.current_step)
             rocket.update_truth_side(t, self.ts, self.current_step)
             
             if not t == t_vec[-1]:

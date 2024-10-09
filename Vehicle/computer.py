@@ -1,10 +1,12 @@
 import numpy as np
 from scipy.spatial.transform import Rotation
 import copy
-from GNC.controller import *
-from GNC.kalmanFilter import *
-from GNC.constraints import *
+from Vehicle.controlConstants import *
+from Simulator.constraints import *
 from Simulator.dynamics import *
+from copy import deepcopy
+import control
+import math
 
 class FlightComputer:
     """ Class Representing the FlightComputer and associated data"""
@@ -13,6 +15,7 @@ class FlightComputer:
         # See rocket instance it is attached to
         self.rocket_knowledge = rocket
         self.ts = ts
+        self.t = 0
         
         # Rotation Matrix
         self.R = None
@@ -45,7 +48,9 @@ class FlightComputer:
         self.sensed_state_history = np.empty((0,16))
         self.kalman_P = np.eye(12)
                
-    def rocket_loop(self, t, ts, current_step):
+    def rocket_loop(self, t, current_step):
+        
+        self.t = t
         
         self.mass = self.rocket_knowledge.mass
         self.com = self.rocket_knowledge.com
@@ -58,17 +63,17 @@ class FlightComputer:
 
         # Save truth state for sensor measurements
         truth_state = self.rocket_knowledge.state
+        self.A = self.compute_A()
+        self.B = self.compute_B()
     
         # Sense the state from sensors
-        Y = np.concatenate((self.rocket_knowledge.gps.reading(truth_state, t), 
+        self.Y = np.concatenate((self.rocket_knowledge.gps.reading(truth_state, t), 
                             self.rocket_knowledge.barometer.reading(truth_state, t),
                             self.rocket_knowledge.accelerometer.reading(truth_state, self.statedot_previous[3:6], t),
                             self.rocket_knowledge.magnetometer.reading(truth_state, t),
                             self.rocket_knowledge.gyroscope.reading(truth_state, t)), axis=None)
-        self.sensed_state_history = np.vstack([self.sensed_state_history, Y])
-        
-        self.state, self.kalman_P = kalman_filter(self.state if t > 0 else self.start_state, self.U, 
-                                                    Y, self.A, self.B, self.ts, P=self.kalman_P)
+        self.sensed_state_history = np.vstack([self.sensed_state_history, self.Y])
+        self.kalman_filter()
         self.state_history = np.vstack([self.state_history, self.state])
 
         # Calculate Errors
@@ -76,12 +81,9 @@ class FlightComputer:
         self.error_history = np.vstack([self.error_history, state_error])
 
         # Call Controller
-        self.A = self.compute_A()
-        self.B = self.compute_B()
-        self.K = compute_K_flight(len(self.state), self.A, self.B)
-        self.U = control_rocket(self.K, state_error, self.linearized_u)
-        
-        #self.U = clean_control_signal(t, self.U, self.u_history)
+        self.K = self.compute_K(self.A, self.B)
+        self.U = np.dot(-self.K, np.append(state_error, state_error[0:3])) + self.linearized_u
+        self.clean_control_signal()
         
         self.u_history = np.vstack([self.u_history, np.dot(self.R, self.U)]) # Rotated into rocket frame
             
@@ -182,3 +184,149 @@ class FlightComputer:
             statedot_minus = self.computer_knowledge_of_dyanmics(self.state, self.ts, u_minus[0], u_minus[1], u_minus[2])
             jacobian[i] = (statedot_plus - statedot_minus) / (2 * h)
         return jacobian.T
+
+    def compute_K(self, A, B):
+        """Compute the K matrix for the flight phase of the mission using lqr
+        """
+                
+        # Remove Roll Columns and Rows
+        A = np.delete(A, 11, 0)
+        A = np.delete(A, 11, 1)
+        A = np.delete(A, 8, 0)
+        A = np.delete(A, 8, 1)
+        B = np.delete(B, 11, 0)
+        B = np.delete(B, 8, 0)
+                
+        Q, R = self.get_QR_LQR()
+                
+        # Control
+        C = np.append(np.identity(3), np.zeros((3, 7)), axis=1) # C is of the form y = Cx, where x is the state and y is the steady state error we care about - in this case just [x y z]
+    
+        K,S,E = control.lqr(A, B, Q, R, integral_action=C) # The K that this spits out has the additional 3 integral terms tacked onto the end, so must add errorx, y, z onto end of state error when solving for U
+        K = np.insert(K, 8, 0, axis=1)
+        K = np.insert(K, 11, 0, axis=1)
+        
+        return K
+    
+    def get_QR_LQR(self):
+        # Q and R
+        Q = np.identity(len(self.state) - 2 + 3) #Minus 2 to remove roll stuff plus 3 to get integral control
+        R = np.identity(len(self.U))
+
+        Q[0][0] = 1 / (Q_X ** 2)
+        Q[1][1] = 1 / (Q_Y ** 2)
+        Q[2][2] = 1 / (Q_Z ** 2)
+        Q[3][3] = 1 / (Q_VX ** 2)
+        Q[4][4] = 1 / (Q_VY ** 2)
+        Q[5][5] = 1 / (Q_VZ ** 2)
+        Q[6][6] = 1 / (Q_PIT ** 2)
+        Q[7][7] = 1 / (Q_YAW ** 2)
+        Q[8][8] = 1 / (Q_VPIT ** 2)
+        Q[9][9] = 1 / (Q_VYAW ** 2)
+        Q[10][10] = 1 / (Q_X ** 2)
+        Q[11][11] = 1 / (Q_Y ** 2)
+        Q[12][12] = 1 / (Q_Z ** 2)
+        
+        R[0][0] = 1 / (R_X ** 2)
+        R[1][1] = 1 / (R_Y ** 2)
+        R[2][2] = 1 / (R_T ** 2)
+        return Q, R
+    
+    def update_linearization(self):
+        """ Update linearization to account for rocket rotation
+        
+        Inputs:
+        - Old A matrix
+        - Old B matrix
+        - Rocket rotation matrix R
+        
+        Output
+        - rotated A 
+        - rotated B
+        
+        """
+    
+        self.A[9:12,6:9] = np.dot(self.R, self.A[9:12,6:9])
+        self.A[9:12,9:12] = np.dot(self.R, self.A[9:12,9:12])
+        self.B[9:12,0:3] = np.dot(self.R, self.B[9:12,0:3])
+        
+    def clean_control_signal(self):
+        if not self.t == 0:
+            self.U[0] = self.low_pass_filter(self.U[0], self.u_history[-1][0], 1)
+            self.U[1] = self.low_pass_filter(self.U[1], self.u_history[-1][1], 1)
+            self.U[2] = self.low_pass_filter(self.U[2], self.u_history[-1][2], 0.75)
+            
+    def low_pass_filter(self, signal, previous_signal_filtered, alpha):
+        filtered_value = alpha * signal + (1 - alpha) * previous_signal_filtered
+        return filtered_value
+    
+    def kalman_filter(self):
+        """ Kalman filter"""
+        
+        def _predict_step(x, u, A, B, P_prev, Q, dt):
+            """ Prediction step for kalman filter"""
+            A_new = np.eye(12) + A*dt
+            B_new = B*dt
+            x_next = A_new @ x + B_new @ u  #Predicted State Estimate
+            P_next = (A_new @ P_prev @ A_new.T) + Q # Predicted Estimate Covariance
+            return x_next, P_next
+        
+        def _update_step(x_next, y, z, H, R, P_next):
+            """ Update step for kalman filter"""
+            
+            # Clean if there are no measurements from a sensor
+            for i in range(len(y)):
+                if math.isnan(y[i]):
+                    y[i] = z[i]
+            
+            S = (H @ P_next @ H.T) + R
+            K = P_next @ H.T @ np.linalg.inv(S)
+            x_fit = x_next + np.dot(K, (y-z))
+            
+            chunk = np.eye(12) - (K @ H)
+            P_fit = (chunk @ P_next @ chunk.T) + (K @ R @ K.T)
+            
+            return x_fit, P_fit
+        
+        # Calculate Process Noise Matrix
+        Q = np.eye(12)
+
+        # H assumes sensor format [x y z xdot ydot zdot z xdot ydot zdot p y r pdot ydot rdot]
+        H = np.array([
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],       
+        ]) 
+    
+        R = np.eye(16)
+        R[0,0] = 10
+        R[1,1] = 10
+        R[2,2] = 10
+        R[3,3] = 10
+        R[4,4] = 10
+        R[5,5] = 100
+        R[6,6] = 10
+        
+        # # Time Step
+        x_next, P_next = _predict_step(self.state, self.U, self.A, self.B, self.kalman_P, Q, self.ts)
+        # Measurement Step
+        z = np.dot(H, x_next) # Expected Measurement based on state
+        x_fit, P_fit = _update_step(x_next, self.Y, z, H, R, P_next)
+
+        self.state = x_fit
+        self.kalman_P = P_fit
+        
+        

@@ -1,4 +1,4 @@
-from GNC.controlConstants import *
+from Vehicle.controlConstants import *
 
 def throttle_checks(throttle, throttle_prev, ts):
     """ Check that the changes to the throttle fit the actuator contraints"""

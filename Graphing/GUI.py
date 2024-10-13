@@ -3,7 +3,7 @@ import tkinter as tk
 from tkinter import ttk
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from Simulator.simulationConstants import *
 from Vehicle.rocketConstants import *
 import math
@@ -141,6 +141,11 @@ def create_graph_set(tab, var, ts, tf, names, num_graphs, legend, multiple_on_on
     canvas.draw()
     canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
+    # Add the toolbar below the canvas
+    toolbar = NavigationToolbar2Tk(canvas, tab)
+    toolbar.update()
+    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
 def plot_graph(var, ts, tf, ax, legend, name='INSERT NAME HERE'):
 
     t = np.linspace(0, tf, len(var))
@@ -168,6 +173,11 @@ def plot_landing_graph(tab, title, xdata, ydata, xlabel, ylabel):
     # Embed Matplotlib figure in Tkinter window
     canvas = FigureCanvasTkAgg(fig, master=tab)
     canvas.draw()
+    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+    # Add the toolbar below the canvas
+    toolbar = NavigationToolbar2Tk(canvas, tab)
+    toolbar.update()
     canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
 def plot_time_series(time_vector, output_vector, clear_plot=False):

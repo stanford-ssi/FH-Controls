@@ -3,7 +3,7 @@ import tkinter as tk
 from tkinter import ttk
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from Simulator.simulationConstants import *
 
 def pull_dynamics(trajectory, ts, tf):
@@ -54,6 +54,11 @@ def plot_dynamics(tab, dynamic_vars, ts, tf, names=None):
     canvas.draw()
     canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
+    # Add toolbar for zoom/pan
+    toolbar = NavigationToolbar2Tk(canvas, tab)
+    toolbar.update()
+    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
 def plot_variable_vs_time_on_subplot(var, ts, tf, ax, name='INSERT NAME HERE'):
 
     t = np.linspace(0, tf, int(tf/ts)+1)
@@ -81,6 +86,11 @@ def plot_variables_vs_time(tab, vars, ts, tf, name='INSERT NAME HERE'):
     canvas = FigureCanvasTkAgg(fig, master=tab)
     canvas.draw()
     canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+    # Add toolbar for zoom/pan
+    toolbar = NavigationToolbar2Tk(canvas, tab)
+    toolbar.update()
+    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
     
 def create_3_graph(tab, vars, ts, tf, names, title):
     nrows, ncols = 1, 3
@@ -93,6 +103,11 @@ def create_3_graph(tab, vars, ts, tf, names, title):
     # Embed Matplotlib figure in Tkinter window
     canvas = FigureCanvasTkAgg(fig, master=tab)
     canvas.draw()
+    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+    # Add toolbar for zoom/pan
+    toolbar = NavigationToolbar2Tk(canvas, tab)
+    toolbar.update()
     canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
 def landing_graph(tab, title, xdata, ydata, xlabel, ylabel, num_suc, num_total):
@@ -113,6 +128,11 @@ def landing_graph(tab, title, xdata, ydata, xlabel, ylabel, num_suc, num_total):
     # Embed Matplotlib figure in Tkinter window
     canvas = FigureCanvasTkAgg(fig, master=tab)
     canvas.draw()
+    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+    # Add toolbar for zoom/pan
+    toolbar = NavigationToolbar2Tk(canvas, tab)
+    toolbar.update()
     canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
 def create_group_gui(sims, planned_trajectory, trajectories, ts, tf):

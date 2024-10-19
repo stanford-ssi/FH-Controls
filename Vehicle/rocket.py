@@ -3,7 +3,6 @@ import math
 import Vehicle.engine
 import Vehicle.rocketConstants
 from Vehicle.components import *
-from scipy.integrate import cumtrapz
 from scipy.interpolate import interp1d
 from Vehicle.sensors import *
 from Simulator.simulationConstants import *

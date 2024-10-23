@@ -62,7 +62,7 @@ def create_graph_set(tab, var, ts, tf, names, num_graphs, legend, multiple_on_on
     fig = plt.figure()
     gs = gridspec.GridSpec(num_rows, num_cols, height_ratios=[1] * num_rows, width_ratios=[1] * num_cols)
 
-    #Ty/except is not the best way to do this, but allows this function to work for all the weird kinds of setup there is
+    #Try/except is not the best way to do this, but allows this function to work for all the weird kinds of setup there is
     try:
         for i in range(len(names)):
             var_ax = plt.subplot(gs[i])

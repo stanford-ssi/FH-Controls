@@ -127,7 +127,7 @@ class Rocket:
         
         # Send signal to actuator
         self.engine.posx = self.actuator_X.send_signal(self.ffc.posx, t)
-        self.engine.posx = self.actuator_Y.send_signal(self.ffc.posy, t)
+        self.engine.posy = self.actuator_Y.send_signal(self.ffc.posy, t)
         self.engine.throttle = self.ffc.throttle
         
         # Inject Error to actuator positions

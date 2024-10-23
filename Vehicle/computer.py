@@ -105,8 +105,8 @@ class FlightComputer:
         # Convert desired accelerations to throttle and gimbal angles
         self.posx, self.posy, self.throttle = self.accelerations_2_actuator_positions()
         self.posx_history = np.append(self.posx_history, self.posx)
-        self.posy_history = np.append(self.posx_history, self.posy)
-        self.throttle_history = np.append(self.posx_history, self.throttle)
+        self.posy_history = np.append(self.posy_history, self.posy)
+        self.throttle_history = np.append(self.throttle_history, self.throttle)
             
     def computer_knowledge_of_dyanmics(self, state, dt, acc_x, acc_y, acc_z):
         """ These are the dynamics used during the linearization for the controller. It is the same as the regular dynamics,

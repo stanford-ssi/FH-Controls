@@ -36,7 +36,7 @@ class Rocket:
         
         # Initialize the rocket's rotation matrix
         self.R_history = np.array([Rotation.from_euler('xyz', [starting_state[7], -starting_state[6], -starting_state[8]]).as_matrix()])
-        self.R = None
+        self.R = np.eye(3)
         
         # Truth States and Histories
         self.state = roll_injection(starting_state)
@@ -125,23 +125,25 @@ class Rocket:
         state_error = self.state - self.ideal_trajectory[current_step]
         self.error_history = np.vstack([self.error_history, state_error])            
         
-        # Convert desired accelerations to throttle and gimbal angles
-        pos_x, pos_y, throttle = accelerations_2_actuator_positions(self.ffc.U, self, t)
+        # Send signal to actuator
+        self.engine.posx = self.actuator_X.send_signal(self.ffc.posx, t)
+        self.engine.posx = self.actuator_Y.send_signal(self.ffc.posy, t)
+        self.engine.throttle = self.ffc.throttle
         
         # Inject Error to actuator positions
-        pos_x, pos_y, throttle = actuator_error_injection(pos_x, pos_y, throttle)
-                    
+        self.engine.posx, self.engine.posy, self.engine.throttle = actuator_error_injection(self.engine.posx, self.engine.posy, self.engine.throttle)
+
         # Perform actuator constraint checks
         if not t == 0:
-            throttle = throttle_checks(throttle, self.engine.throttle_history[-1], ts)
-            pos_x = pos_checks(pos_x, self.engine.posx_history[-1], ts)
-            pos_y = pos_checks(pos_y, self.engine.posy_history[-1], ts)
+            self.engine.throttle = throttle_checks(self.engine.throttle, self.engine.throttle_history[-1], ts)
+            self.engine.posx = pos_checks(self.engine.posx, self.engine.posx_history[-1], ts)
+            self.engine.posy = pos_checks(self.engine.posy, self.engine.posy_history[-1], ts)
         
         self.update_fuels()
-        self.engine.save_throttle(throttle)
-        self.engine.save_posX(pos_x)
-        self.engine.save_posY(pos_y)
-        self.engine.save_thrust(self.engine.get_thrust(t, throttle))
+        self.engine.save_throttle(self.engine.throttle)
+        self.engine.save_posX(self.engine.posx)
+        self.engine.save_posY(self.engine.posy)
+        self.engine.save_thrust(self.engine.get_thrust(t, self.engine.throttle))
     
     def update_fuels(self):
         """ Remove the fuel used in the timestep from the tanks """

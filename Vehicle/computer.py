@@ -4,6 +4,7 @@ import copy
 from Vehicle.controlConstants import *
 from Simulator.constraints import *
 from Simulator.dynamics import *
+import Vehicle.engineConstants
 from copy import deepcopy
 import control
 import math
@@ -47,6 +48,20 @@ class FlightComputer:
         # Sensors:
         self.sensed_state_history = np.empty((0,16))
         self.kalman_P = np.eye(12)
+        
+        # Engine States:
+        self.throttle_history = np.empty(shape=(0))
+        self.throttle = 1
+        self.posx_history = np.empty(shape=(0))
+        self.posx = 0
+        self.posy_history = np.empty(shape=(0))
+        self.posy = 0
+        
+        # Known Rocket Info
+        self.engine_length = Vehicle.engineConstants.LENGTH
+        self.burn_duration =  Vehicle.engineConstants.ENGINE_BURN_DURATION
+        self.thrust_curve = Vehicle.engineConstants.THRUST_CURVE
+        self.dt_thrust_curve = Vehicle.engineConstants.DT_THRUST_CURVE
                
     def rocket_loop(self, t, current_step):
         
@@ -86,6 +101,12 @@ class FlightComputer:
         self.clean_control_signal()
         
         self.u_history = np.vstack([self.u_history, np.dot(self.R, self.U)]) # Rotated into rocket frame
+        
+        # Convert desired accelerations to throttle and gimbal angles
+        self.posx, self.posy, self.throttle = self.accelerations_2_actuator_positions()
+        self.posx_history = np.append(self.posx_history, self.posx)
+        self.posy_history = np.append(self.posx_history, self.posy)
+        self.throttle_history = np.append(self.posx_history, self.throttle)
             
     def computer_knowledge_of_dyanmics(self, state, dt, acc_x, acc_y, acc_z):
         """ These are the dynamics used during the linearization for the controller. It is the same as the regular dynamics,
@@ -329,4 +350,63 @@ class FlightComputer:
         self.state = x_fit
         self.kalman_P = P_fit
         
+    def get_throttle(self, thrust):
+        """ Takes in a query time and a thrust and outputs the throttle based on the thrust curve
         
+        Inputs:
+            t = requested time for query (with t=0 being engine startup)
+            thrust = requested thrust
+            
+        Returns:
+            throttle = throttle given conditions above
+            
+        """
+
+        # Calculate "Real" Postition on thrust curve, based off of throttle history
+        if len(self.throttle_history) == 0:
+            t_adj = 0
+        else:
+            t_adj = np.sum(self.throttle_history) * self.ts
+
+        # Calculate Thrust at given time
+        if t_adj >= self.burn_duration:
+            maxThrust = 0
+        else:
+            maxThrust = self.thrust_curve[int(t_adj/self.dt_thrust_curve)]
+        self.thrust = maxThrust
+
+        # Apply Throttling
+        if maxThrust == 0:
+            throttle = 1
+        else:
+            throttle = thrust / maxThrust
+
+        return(throttle)
+    
+    def accelerations_2_actuator_positions(self):
+        """ Convert control input to engine position and throttle
+        
+        Inputs:
+        - Control input in global frame (1x3)
+        - rocket object
+        - current time
+        
+        Output:
+        - pos_x, the x position of the engine
+        - pos_y, the y position of the engine
+        - throttle, the throttle percent of the engine
+        """
+        # Rotate into rocket frame
+        U = np.dot(self.R, self.U) 
+        gimbal_theta = np.arctan2(-U[1], -U[0])
+        gimbal_psi = np.arctan2(np.sqrt((U[1] ** 2) + (U[0] ** 2)), U[2])
+        T = self.mass * np.sqrt((U[0] ** 2) + (U[1] ** 2) + (U[2] ** 2))
+        gimbal_r = np.tan(gimbal_psi) * self.engine_length
+        if (gimbal_theta < np.pi / 2) and (gimbal_theta > -np.pi / 2):
+            pos_x_commanded = np.sqrt((gimbal_r ** 2) / (1 + (np.tan(gimbal_theta) ** 2)))
+        else:
+            pos_x_commanded = -1 * np.sqrt((gimbal_r ** 2) / (1 + (np.tan(gimbal_theta) ** 2)))
+        pos_y_commanded = pos_x_commanded * np.tan(gimbal_theta)
+        throttle_commanded = self.get_throttle(T)
+        
+        return pos_x_commanded, pos_y_commanded, throttle_commanded

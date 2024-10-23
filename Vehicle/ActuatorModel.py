@@ -18,7 +18,7 @@ class LinearActuator:
         self.T  = np.linspace(0, int(tf/ts)*ts, num=int(tf/ts)+1)
         self.U  = np.array([[0.0]])   
 
-    def get_output(self, u_current, t):
+    def send_signal(self, u_current, t):
         if not t == 0:
             self.U = np.append(self.U, u_current)
         tout, y, x = signal.lsim(self.sys, self.U, self.T[:min(enumerate(self.T), key=lambda x: abs(x[1]-t))[0] + 1], self.X)

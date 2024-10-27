@@ -114,7 +114,6 @@ class Rocket:
 
     def update_truth_side(self, t, ts, current_step):
         ''' Run all the functions needed to update the rocket at a new timestep'''
-        
         self.state_history = np.vstack([self.state_history, self.state])   
         
         # Log Rocket Rotation                  

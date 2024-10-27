@@ -12,11 +12,12 @@ from Simulator.errorInjection import *
 from Simulator.simulationConstants import GRAVITY as g
 from Simulator.simulationConstants import RHO as rho
 from scipy.spatial.transform import Rotation
+from Vehicle.ActuatorModel import *
 from termcolor import colored
 
 class Simulation:
     """ Class Representing the Simulation and associated data"""
-    def __init__(self, timefinal, simulation_timestep, starting_state, wind, planned_trajectory):
+    def __init__(self, timefinal, simulation_timestep, starting_state, wind, planned_trajectory):                      
         
         # Create Rocket Object
         self.rocket = Vehicle.rocket.Rocket(simulation_timestep, planned_trajectory, starting_state)
@@ -34,7 +35,7 @@ class Simulation:
         # Initialize situation
         self.wind_history = np.empty((0,len(wind)))
         self.base_wind = np.array([np.random.normal(0, wind[0]), np.random.normal(0, wind[1]), np.random.normal(0, wind[2])])
-        self.current_wind = self.base_wind
+        self.current_wind = self.base_wind                     
 
     def propogate(self):
         """ Simple propogator

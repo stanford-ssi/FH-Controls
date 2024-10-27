@@ -23,13 +23,12 @@ WIND_MULTIPLIER = 1.5
 
 # Disturbance for engine position and throttle
 RANDOMIZED_ERROR_POS_SIGMA = 0.0001 # meter
-CONSTANT_ERROR_POS = 0.001 # meter
 RANDOMIZED_ERROR_THROTTLE_SIGMA = 0.01
 CONSTANT_ERROR_THROTTLE = 0.0
 
 # Random Roll Injection
 ROLL_SIGMA = 0.1
-ROLL_MU = 0.1
+ROLL_MU = 0
 
 # Landing Constraints
 THRESHOLD_ALTITUDE = 1
@@ -38,4 +37,4 @@ MAX_RADIUS_ERROR = 1 # m
 MAX_Z_SPEED = 2 # m/s
 MAX_XY_SPEED = 0.1 # m/s
 MAX_ROTATION = 0.1 # rad
-MAX_ROTATION_SPEED = 0.02 # rad/s
+MAX_ROTATION_SPEED = 0.1 # rad/s

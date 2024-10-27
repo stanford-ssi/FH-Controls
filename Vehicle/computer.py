@@ -18,10 +18,6 @@ class FlightComputer:
         self.ts = ts
         self.t = 0
         
-        # Rotation Matrix
-        self.R = None
-        self.R_history = np.array([Rotation.from_euler('xyz', [start_state[7], -start_state[6], -start_state[8]]).as_matrix()])
-        
         # States and Histories
         self.start_state = start_state
         self.state = start_state
@@ -30,6 +26,10 @@ class FlightComputer:
         self.statedot_previous = np.zeros(len(start_state))
         self.ideal_trajectory = planned_trajectory
         self.error_history = np.empty((0,len(start_state)))
+        
+        # Rotation Matrix
+        self.R = Rotation.from_euler('xyz', [self.state[7], -self.state[6], -self.state[8]]).as_matrix()
+        self.R_history = np.array([Rotation.from_euler('xyz', [start_state[7], -start_state[6], -start_state[8]]).as_matrix()])
         
         # FFC Estimates that haven't been built into truth and ffc yet
         self.mass = self.rocket_knowledge.mass
@@ -134,8 +134,8 @@ class FlightComputer:
         pitch = state[6] # Angle from rocket from pointing up towards positive x axis
         yaw = state[7] # Angle from rocket from pointing up towards positive y axis
         roll = state[8] # Roll, ccw when looking down on rocket
-        R = Rotation.from_euler('xyz', [yaw, -pitch, -roll]).as_matrix()
-        R_inv = np.linalg.inv(R)
+        R = Rotation.from_euler('xyz', [yaw, -pitch, -roll]).as_matrix() # Cannot use self.R here because we are varying the state slightly for jacobian
+        R_inv = np.linalg.inv(R) # Cannot use self.R_inv here because we have varied the state slightly for jacobian
         
         # Acceleration rotation into rocket frame
         acc = np.array([acc_x, acc_y, acc_z])
@@ -161,7 +161,7 @@ class FlightComputer:
         statedot[9:12] = alphas.tolist()
         
         # Rotational Kinematics
-        statedot[6:9] = get_EA_dot(state)
+        statedot[6:9] = get_EA_dot(state, self.R, R_inv)
         return statedot
     
     def compute_A(self):

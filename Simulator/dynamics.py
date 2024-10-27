@@ -72,14 +72,11 @@ def full_dynamics(state, rocket, wind, dt, t):
     statedot[9:12] = alphas.tolist()
     
     # Rotational Kinematics
-    statedot[6:9] = get_EA_dot(state)
+    statedot[6:9] = get_EA_dot(state, R, R_inv)
 
     return statedot
 
-def get_EA_dot(state):
-    
-    R = Rotation.from_euler('xyz', [state[7], -state[6], -state[8]]).as_matrix()
-    R_inv = np.linalg.inv(R)
+def get_EA_dot(state, R, R_inv):
     w_gf = np.dot(R_inv, state[9:12])
 
     wx = w_gf[0]

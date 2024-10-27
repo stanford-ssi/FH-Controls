@@ -17,8 +17,8 @@ def actuator_error_injection(pos_x, pos_y, throttle):
     - modified throttle
     
     """
-    pos_x = np.random.normal(pos_x + CONSTANT_ERROR_POS, RANDOMIZED_ERROR_POS_SIGMA)
-    pos_y = np.random.normal(pos_y + CONSTANT_ERROR_POS, RANDOMIZED_ERROR_POS_SIGMA)
+    pos_x = np.random.normal(pos_x + np.random.normal(0, RANDOMIZED_ERROR_POS_SIGMA * 10), RANDOMIZED_ERROR_POS_SIGMA)
+    pos_y = np.random.normal(pos_y + np.random.normal(0, RANDOMIZED_ERROR_POS_SIGMA * 10), RANDOMIZED_ERROR_POS_SIGMA)
     throttle = np.random.normal(throttle + CONSTANT_ERROR_THROTTLE, RANDOMIZED_ERROR_THROTTLE_SIGMA)
     return pos_x, pos_y, throttle
 

@@ -82,12 +82,12 @@ class FlightComputer:
         self.B = self.compute_B()
     
         # Sense the state from sensors
-        self.Y = np.concatenate((self.rocket_knowledge.gps.reading(truth_state, t), 
+        self.measurement = np.concatenate((self.rocket_knowledge.gps.reading(truth_state, t), 
                             self.rocket_knowledge.barometer.reading(truth_state, t),
                             self.rocket_knowledge.accelerometer.reading(truth_state, self.statedot_previous[3:6], t),
                             self.rocket_knowledge.magnetometer.reading(truth_state, t),
                             self.rocket_knowledge.gyroscope.reading(truth_state, t)), axis=None)
-        self.sensed_state_history = np.vstack([self.sensed_state_history, self.Y])
+        self.sensed_state_history = np.vstack([self.sensed_state_history, self.measurement])
         self.kalman_filter()
         self.state_history = np.vstack([self.state_history, self.state])
 
@@ -286,30 +286,30 @@ class FlightComputer:
         
         def _predict_step(x, u, A, B, P_prev, Q, dt):
             """ Prediction step for kalman filter"""
-            A_new = np.eye(12) + A*dt
-            B_new = B*dt
-            x_next = A_new @ x + B_new @ u  #Predicted State Estimate
-            P_next = (A_new @ P_prev @ A_new.T) + Q # Predicted Estimate Covariance
+            
+            # It is way too much work to make a state transition model by differentiating the dynamics so we do this instead
+            F = np.eye(12) + A*dt
+            x_next = F @ x + (B*dt) @ u  # Transition State to next state using our understanding of dynamics
+            P_next = F @ P_prev @ F.T + Q # Transition estimate covariance to next step
             return x_next, P_next
         
-        def _update_step(x_next, y, z, H, R, P_next):
+        def _update_step(x_next, P_next, measurement, H, R):
             """ Update step for kalman filter"""
             
-            # Clean if there are no measurements from a sensor
-            for i in range(len(y)):
-                if math.isnan(y[i]):
-                    y[i] = z[i]
-            
-            S = (H @ P_next @ H.T) + R
-            K = P_next @ H.T @ np.linalg.inv(S)
-            x_fit = x_next + np.dot(K, (y-z))
-            
-            chunk = np.eye(12) - (K @ H)
-            P_fit = (chunk @ P_next @ chunk.T) + (K @ R @ K.T)
-            
+            # If a sensor has no measurement this timestep, use the expected value (z)
+            z = H @ x_next
+            for i in range(len(measurement)):
+                if math.isnan(measurement[i]):
+                    measurement[i] = z[i]
+
+            # Kalman update steps
+            y = measurement - z # measurement with truth - expected (using x_next)
+            K = P_next @ H.T @ np.linalg.inv(H @ P_next @ H.T + R)
+            x_fit = x_next + K @ y
+            P_fit = (np.eye(12) - K @ H) @ P_next
             return x_fit, P_fit
         
-        # Calculate Process Noise Matrix
+        # Create Process Noise Matrix
         Q = np.eye(12)
 
         # H assumes sensor format [x y z xdot ydot zdot z xdot ydot zdot p y r pdot ydot rdot]
@@ -341,11 +341,11 @@ class FlightComputer:
         R[5,5] = 100
         R[6,6] = 10
         
-        # # Time Step
+        # Update Step
         x_next, P_next = _predict_step(self.state, self.U, self.A, self.B, self.kalman_P, Q, self.ts)
+        
         # Measurement Step
-        z = np.dot(H, x_next) # Expected Measurement based on state
-        x_fit, P_fit = _update_step(x_next, self.Y, z, H, R, P_next)
+        x_fit, P_fit = _update_step(x_next, P_next, self.measurement, H, R)
 
         self.state = x_fit
         self.kalman_P = P_fit

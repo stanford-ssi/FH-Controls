@@ -18,12 +18,13 @@ class Rocket:
         # Create Engine Object inside Rocket
         self.dt = simulation_timestep
         self.engine = Vehicle.engine.Engine(simulation_timestep)
-        self.mass_noEngine = Vehicle.rocketConstants.ROCKET_MASS_WITHOUT_ENGINE
-        self.mass = Vehicle.rocketConstants.ROCKET_MASS_TOTAL  # Rocket Starts Fully Fueled
-        self.massHistory = np.empty(shape=(0))
 
         # Pull Components List and Build rocket
         self.components = self.build_rocket(Vehicle.rocketConstants.COMPONENTS)
+
+        # Establish mass, mass_noEngine (Non-changing mass), and mass history.
+        self.massHistory = np.empty(shape=(0))
+        self.mass, self.mass_noEngine = self.calculate_masses(self.components)
 
         # Find Cg and Cp locations, measured from top of rocket
         self.com = self.calculate_com()
@@ -63,35 +64,47 @@ class Rocket:
     def build_rocket(self, components):
         ''' Takes in list of parts from rocket constants and build rocket'''
         new_components = []
-        mass_check = 0
         for component in components:
             if component['type'] == 'HollowCylinder':
                 new_component = HollowCylinder(
                     component['mass'], component['inner_radius'], component['outer_radius'], component['length'], component['bottom_z'])
-                mass_check += component['mass']
             if component['type'] == 'SolidCylinder':
                 new_component = SolidCylinder(
                     component['mass'], component['radius'], component['length'], component['bottom_z'])
-                mass_check += component['mass']
             if component['type'] == 'ChangingHollowCylinder':
                 new_component = ChangingHollowCylinder(component['start_mass'], component['start_inner_radius'],
                                                        component['outer_radius'], component['length'], component['bottom_z'], component['start_inner_radius'])
-                mass_check += component['start_mass']
             if component['type'] == 'ChangingSolidCylinder':
                 new_component = ChangingSolidCylinder(
                     component['start_mass'], component['radius'], component['start_length'], component['bottom_z'], component['start_length'])
-                mass_check += component['start_mass']
             if component['type'] == 'PointMass':
                 new_component = PointMass(
                     component['mass'], component['bottom_z'])
-                mass_check += component['mass']
             new_components.append(new_component)
-        if not round(mass_check, 2) == round(self.mass, 2):
-            print('Rocket Mass: %d' % self.mass)
-            print('Sum of Components Mass: %d' % mass_check)
-            raise ValueError(
-                'Rocket Component Masses do not sum to total rocket mass! Check rocketConstants File!!')
         return new_components
+    
+    def calculate_masses(self, comps):
+        total_mass = 0
+        non_fuel_mass = 0
+
+        for component in comps:
+            # Check if the component has a `start_mass` attribute
+            if hasattr(component, 'start_mass'):
+                total_mass += component.start_mass  # For changing components
+            elif hasattr(component, 'mass'):
+                total_mass += component.mass  # For fixed components
+            else:
+                raise ValueError(f"Component {component} missing 'mass' or 'start_mass' attribute.")
+
+            # Check if the component has a 'static' attribute and if it's True
+            if getattr(component, 'static', False):
+                if hasattr(component, 'start_mass'):
+                    non_fuel_mass += component.start_mass
+                elif hasattr(component, 'mass'):
+                    non_fuel_mass += component.mass
+
+        return total_mass, non_fuel_mass
+
 
     def calculate_com(self):
         """

@@ -1,5 +1,3 @@
-ROCKET_MASS_TOTAL = 98.03
-ROCKET_MASS_WITHOUT_ENGINE = 36.8
 ROCKET_DIAMETER = 0.25
 
 # Aerodynamics, pull these values from open rocket
@@ -15,42 +13,46 @@ COMPONENTS = [
         'name': 'fuel_grain',
         'type': 'ChangingHollowCylinder',
         'start_mass': 2.73,
-        'start_inner_radius': 0.0359,
-        'outer_radius': 0.0635,
-        'length': 0.2728,
-        'bottom_z': 0        
+        'start_inner_radius': 0.03167, # m, Updated
+        'outer_radius': 0.06191, # m, Updated
+        'length': 0.2831,  # Updated
+        'bottom_z': 0, 
+        'static': False    
     },
     
     # Fuel Casing/Combustion Chamber
     {
         'name': 'combustion_chamber',
         'type': 'HollowCylinder',
-        'mass': 30,
-        'inner_radius': 0.0635,
-        'outer_radius': 0.06858,
-        'length': 0.316738,
-        'bottom_z': 0        
+        'mass': 11.366, # kg, Updated
+        'inner_radius': 0.0635, # m, Updated
+        'outer_radius': 0.06858, # m, Updated
+        'length': 0.6096, # meters, Updated
+        'bottom_z': 0,
+        'static': True       
     },
     
     # Ox
     {
-        'name': 'ox_tank',
+        'name': 'ox_tank',  
         'type': 'ChangingSolidCylinder',
         'start_mass': 19.85,
-        'radius': 0.25,
+        'radius': 0.25,  # Same as inner radius of Oxygen Tank
         'start_length': 0.616712,
-        'bottom_z': 0.55
+        'bottom_z': 0.6096,  #m, Updated
+        'static': False
     },
     
     # Ox Tank
     {
         'name': 'combustion_chamber',
         'type': 'HollowCylinder',
-        'mass': 8.65,
-        'inner_radius': 0.09525,
-        'outer_radius': 0.1016,
-        'length': 0.616712,
-        'bottom_z': 0.55      
+        'mass': 14.336, # kg, Updated
+        'inner_radius': 0.09525, # m,Updated
+        'outer_radius': 0.1016, # m, Updated
+        'length': 1.0414, # m, Updated
+        'bottom_z': 0.6096,  #m Updated minimum, because there will be feed-line components in between.
+        'static': True
     },
     
         # Nitrogen
@@ -60,7 +62,8 @@ COMPONENTS = [
         'start_mass': 2.5,
         'radius': 0.09,
         'start_length': 0.65,
-        'bottom_z': 1.25
+        'bottom_z': 1.25,
+        'static': False
     },
     
         # Nitrogen Tank
@@ -71,7 +74,8 @@ COMPONENTS = [
         'inner_radius': 0.09,
         'outer_radius': 0.10,
         'length': 0.65,
-        'bottom_z': 1.25      
+        'bottom_z': 1.25, # Above Ox + Combustion Chamber     
+        'static': True
     },
     
     # Avionics / random shit
@@ -79,7 +83,8 @@ COMPONENTS = [
         'name': 'avionics',
         'type': 'PointMass',
         'mass': 20,
-        'bottom_z': 2.25
+        'bottom_z': 2.25,
+        'static': True
     }
 ]
 

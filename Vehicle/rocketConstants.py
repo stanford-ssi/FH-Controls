@@ -34,7 +34,7 @@ COMPONENTS = [
     
     # Ox
     {
-        'name': 'ox_tank',  
+        'name': 'ox',  
         'type': 'ChangingSolidCylinder',
         'start_mass': 19.85,
         'radius': 0.25,  # Same as inner radius of Oxygen Tank
@@ -45,7 +45,7 @@ COMPONENTS = [
     
     # Ox Tank
     {
-        'name': 'combustion_chamber',
+        'name': 'ox_tank',
         'type': 'HollowCylinder',
         'mass': 14.336, # kg, Updated
         'inner_radius': 0.09525, # m,Updated
@@ -57,7 +57,7 @@ COMPONENTS = [
     
         # Nitrogen
     {
-        'name': 'n2_tank',
+        'name': 'n2',
         'type': 'ChangingSolidCylinder',
         'start_mass': 2.5,
         'radius': 0.09,
@@ -68,7 +68,7 @@ COMPONENTS = [
     
         # Nitrogen Tank
     {
-        'name': 'combustion_chamber',
+        'name': 'n2_tank',
         'type': 'HollowCylinder',
         'mass': 14.3,
         'inner_radius': 0.09,

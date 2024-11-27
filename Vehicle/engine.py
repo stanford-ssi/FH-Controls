@@ -21,6 +21,11 @@ class Engine:
         self.posx = 0
         self.posy_history = np.empty(shape=(0))
         self.posy = 0
+        self.gimbal_psi_history = np.empty(shape=(0))
+        self.gimbal_psi = 0
+        self.gimbal_theta_history = np.empty(shape=(0))
+        self.gimbal_theta = 0
+        self.gimbal_alpha = np.array([0,0,0])
 
         # Masses
         self.drymass = Vehicle.engineConstants.ENGINE_DRYMASS
@@ -63,17 +68,57 @@ class Engine:
         self.throttle_history = np.append(self.throttle_history, throttle)
         self.throttle = throttle
 
-    def save_posX(self, posx):
+    def save_engine_positions(self):
         """ Takes in the current Throttle and saves it into the throttle history"""
-        self.posx_history = np.append(self.posx_history, posx)
-        self.posx = posx
-
-    def save_posY(self, posy):
-        """ Takes in the current Throttle and saves it into the throttle history"""
-        self.posy_history = np.append(self.posy_history, posy)
-        self.posy = posy
+        self.posx_history = np.append(self.posx_history, self.posx)
+        self.posy_history = np.append(self.posy_history, self.posy)
+        self.gimbal_psi_history = np.append(self.gimbal_psi_history, self.gimbal_psi)
+        self.gimbal_theta_history = np.append(self.gimbal_theta_history, self.gimbal_theta)
         
     def save_thrust(self, thrust):
         """ Takes in the current Thrust and saves it into the thrust history"""
         self.thrust_history = np.append(self.thrust_history, thrust)
         
+    def calculate_angular_rates(self, t):
+        if (int(t / self.timestep)) > 1:     
+            psi1 = self.gimbal_psi_history[-1]
+            theta1 = self.gimbal_theta_history[-1]
+            psi2 = self.gimbal_psi_history[-2]
+            theta2 = self.gimbal_theta_history[-2]
+            psi3 = self.gimbal_psi_history[-3]
+            theta3 = self.gimbal_theta_history[-3]
+            
+            cart1 = np.array([np.sin(psi1)*np.cos(theta1), np.sin(psi1)*np.sin(theta1), -np.cos(psi1)])
+            cart2 = np.array([np.sin(psi2)*np.cos(theta2), np.sin(psi2)*np.sin(theta2), -np.cos(psi2)])
+            cart3 = np.array([np.sin(psi3)*np.cos(theta3), np.sin(psi3)*np.sin(theta3), -np.cos(psi3)])
+            
+            w0 = (np.cross(cart1, cart2) / np.linalg.norm(np.cross(cart1, cart2))) * (self.angular_difference(psi1, theta1, psi2, theta2) / self.timestep)
+            w1 = (np.cross(cart2, cart3) / np.linalg.norm(np.cross(cart2, cart3))) * (self.angular_difference(psi2, theta2, psi3, theta3) / self.timestep)
+            
+            self.gimbal_alpha = (w0 - w1) / self.timestep
+        
+    def angular_difference(self, lat1, lon1, lat2, lon2):
+        """
+        Calculate the angular difference (in radians) between two points
+        given in latitude and longitude.
+        
+        Parameters:
+        lat1, lon1: Latitude and longitude of the first point
+        lat2, lon2: Latitude and longitude of the second point
+        
+        Returns:
+        Angular difference (in radians)
+        """
+        # Convert our engine coords to lat long
+        lat1 = (np.pi/2) - lat1
+        lat2 = (np.pi/2) - lat2
+        
+        # Haversine formula to calculate angular difference
+        delta_lat = lat2 - lat1
+        delta_lon = lon2 - lon1
+
+        a = np.sin(delta_lat / 2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(delta_lon / 2)**2
+        c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
+        
+        return c
+            

@@ -64,7 +64,7 @@ def full_dynamics(state, rocket, wind, dt, t):
     # Calculate Alphas
     torque = np.array([(T * np.sin(gimbal_psi) * -np.cos(gimbal_theta) * lever_arm) + wind_moment[0],
                         (T * np.sin(gimbal_psi) * -np.sin(gimbal_theta) * lever_arm) + wind_moment[1],
-                        0])
+                        0]) + rocket.engine.I @ rocket.engine.gimbal_alpha # This accounts for torque from the tvc system
     I_dot = (rocket.I - rocket.I_prev) / dt
     alphas = np.dot(np.linalg.inv(rocket.I), torque - np.cross(w, np.dot(rocket.I, w)) - np.dot(I_dot, w))
 

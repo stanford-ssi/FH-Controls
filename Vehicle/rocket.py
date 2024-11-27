@@ -67,19 +67,19 @@ class Rocket:
         for component in components:
             if component['type'] == 'HollowCylinder':
                 new_component = HollowCylinder(
-                    component['mass'], component['inner_radius'], component['outer_radius'], component['length'], component['bottom_z'])
+                    component['name'], component['mass'], component['inner_radius'], component['outer_radius'], component['length'], component['bottom_z'])
             if component['type'] == 'SolidCylinder':
                 new_component = SolidCylinder(
-                    component['mass'], component['radius'], component['length'], component['bottom_z'])
+                    component['name'], component['mass'], component['radius'], component['length'], component['bottom_z'])
             if component['type'] == 'ChangingHollowCylinder':
-                new_component = ChangingHollowCylinder(component['start_mass'], component['start_inner_radius'],
+                new_component = ChangingHollowCylinder(component['name'], component['start_mass'], component['start_inner_radius'],
                                                        component['outer_radius'], component['length'], component['bottom_z'], component['start_inner_radius'])
             if component['type'] == 'ChangingSolidCylinder':
                 new_component = ChangingSolidCylinder(
-                    component['start_mass'], component['radius'], component['start_length'], component['bottom_z'], component['start_length'])
+                    component['name'], component['start_mass'], component['radius'], component['start_length'], component['bottom_z'], component['start_length'])
             if component['type'] == 'PointMass':
                 new_component = PointMass(
-                    component['mass'], component['bottom_z'])
+                    component['name'], component['mass'], component['bottom_z'])
             new_components.append(new_component)
         return new_components
     
@@ -140,7 +140,8 @@ class Rocket:
         # Send signal to actuator
         self.engine.posx = self.actuator_X.send_signal(self.ffc.posx, t)
         self.engine.posy = self.actuator_Y.send_signal(self.ffc.posy, t)
-        self.engine.throttle = self.ffc.throttle
+        self.engine.throttle = self.ffc.throttle 
+        self.engine.gimbal_psi, self.engine.gimbal_theta = self.convert_engine_pos_2_angle()
         
         # Inject Error to actuator positions
         self.engine.posx, self.engine.posy, self.engine.throttle = actuator_error_injection(self.engine.posx, self.engine.posy, self.engine.throttle)
@@ -153,8 +154,8 @@ class Rocket:
         
         self.update_fuels()
         self.engine.save_throttle(self.engine.throttle)
-        self.engine.save_posX(self.engine.posx)
-        self.engine.save_posY(self.engine.posy)
+        self.engine.save_engine_positions()
+        self.engine.calculate_angular_rates(t)
         self.engine.save_thrust(self.engine.get_thrust(t, self.engine.throttle))
     
     def update_fuels(self):
@@ -172,7 +173,8 @@ class Rocket:
         
         # Save necessary information
         self.update_mass()
-        self.update_I()    
+        self.update_I()
+        self.update_engine_I() 
     
     def update_mass(self):
         """ Update the rocket mass
@@ -255,3 +257,31 @@ class Rocket:
         moment = [Mx, My, 0]
         return moment
 
+    def convert_engine_pos_2_angle(self):
+        length = self.engine.length
+        gimbal_r = np.sqrt(self.engine.posx ** 2 + self.engine.posy ** 2)
+        
+        gimbal_psi = np.arctan2(gimbal_r, length)
+        gimbal_theta = np.arctan2(self.engine.posy, self.engine.posx)
+        return gimbal_psi, gimbal_theta
+    
+    def update_engine_I(self):
+        engine_moving_components = ['fuel_grain', 'combustion_chamber'] 
+        
+        # MOI in xy
+        tot_moi_xy = 0
+        for component in self.components:
+            if component.name in engine_moving_components:
+                tot_moi_xy += component.moment_of_inertia_xy() + (component.center_of_mass()[1] * (component.center_of_mass()[0] ** 2))
+
+        # MOI in z
+        tot_moi_z = 0
+        for component in self.components:
+            if component.name in engine_moving_components:
+                tot_moi_z += component.moment_of_inertia_z()
+                
+        # Update I and I_prev
+        self.engine.I = np.array([[tot_moi_xy, 0, 0],
+                            [0, tot_moi_xy, 0],
+                            [0, 0, tot_moi_z]])
+        

@@ -80,9 +80,11 @@ def plot_frames_over_time(sim):
     x = sim.rocket.engine.posx_history
     y = sim.rocket.engine.posy_history
     z = -np.sqrt(sim.rocket.engine.throttle_history ** 2 - np.sqrt(x**2 + y**2))
-
-    engine_thrust = (np.vstack((x, y, z)).T @ [np.linalg.inv(matrix) for matrix in sim.rocket.R_history])[0]
-    
+    engine_thrust = np.vstack((x, y, z)).T 
+    rotation_matrices = [matrix for matrix in sim.rocket.R_history]
+    for i, thrust in enumerate(engine_thrust):
+        engine_thrust[i] = thrust @ np.linalg.inv(rotation_matrices[i])
+        
     position = sim.rocket.state_history[:,0:3]
 
     plotVectorsOverTime(position, bodyAxesX, bodyAxesY, bodyAxesZ, engine_thrust, time)

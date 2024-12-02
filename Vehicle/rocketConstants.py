@@ -32,6 +32,15 @@ COMPONENTS = [
         'static': True       
     },
     
+    # Avionics / random shit
+    {
+        'name': 'avionics',
+        'type': 'PointMass',
+        'mass': 50, # Adding extra mass for throttle help
+        'bottom_z': 0.6096,
+        'static': True
+    },
+    
     # Ox
     {
         'name': 'ox',  
@@ -82,7 +91,7 @@ COMPONENTS = [
     {
         'name': 'avionics',
         'type': 'PointMass',
-        'mass': 20,
+        'mass': 20, # Adding extra mass for throttle help
         'bottom_z': 2.25,
         'static': True
     }
@@ -106,11 +115,11 @@ MAGNETOMETER_UPDATE_FREQ = 100 #hertz
 # Barometer
 BAROMETER_SIGMA = 0.001
 BAROMETER_MU = 0.000
-BAROMETER_UPDATE_FREQ = 1 #hertz
+BAROMETER_UPDATE_FREQ = 100 #hertz
 
 # GPS
-GPS_SIGMA = 0.02 # Assuming "10mm accuracy" from spec sheet is refering to it's standard deviation. Add margin
+GPS_SIGMA = 0.05 # Assuming "10mm accuracy" from spec sheet is refering to it's standard deviation. Add margin
 GPS_MU = 0 # Not biased so far as we can tell
-GPS_UPDATE_FREQ = 10 #hertz
+GPS_UPDATE_FREQ = 10 #hertz KEEP THIS CONSTANT
 
 

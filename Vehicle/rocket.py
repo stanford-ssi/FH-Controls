@@ -180,7 +180,7 @@ class Rocket:
         """ Update the rocket mass
         """
         self.engine.mass -= (self.engine.thrust * self.engine.throttle / self.engine.exhaust_velocity) * self.dt
-        self.mass = self.mass_noEngine + self.engine.mass
+        self.mass -= (self.engine.thrust * self.engine.throttle / self.engine.exhaust_velocity) * self.dt
         self.massHistory = np.append(self.massHistory, self.mass)
 
     def update_I(self):

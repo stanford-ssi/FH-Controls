@@ -131,18 +131,18 @@ def create_graph_set(tab, var, ts, tf, names, num_graphs, legend, multiple_on_on
                 if i == 1:
                     data = sensors["Magnetometer"][:,1]
                     plot_graph(data, 1/MAGNETOMETER_UPDATE_FREQ, tf, var_ax, "Magnetometer", names[i])  
-                # if i == 2:
-                #     data = sensors["Magnetometer"][:,2]
-                #     plot_graph(data, 1/MAGNETOMETER_UPDATE_FREQ, tf, var_ax, "Magnetometer", names[i])
-                # if i == 3:
-                #     data = sensors["Gyro"][:,0]
-                #     plot_graph(data, 1/GYROSCOPE_UPDATE_FREQ, tf, var_ax, "Gyro", names[i])             
-                # if i == 4:
-                #     data = sensors["Gyro"][:,1]
-                #     plot_graph(data, 1/GYROSCOPE_UPDATE_FREQ, tf, var_ax, "Gyro", names[i])        
-                # if i == 5:
-                #     data = sensors["Gyro"][:,2]
-                #     plot_graph(data, 1/GYROSCOPE_UPDATE_FREQ, tf, var_ax, "Gyro", names[i])                
+                if i == 2:
+                    data = sensors["Magnetometer"][:,2]
+                    plot_graph(data, 1/MAGNETOMETER_UPDATE_FREQ, tf, var_ax, "Magnetometer", names[i])
+                if i == 3:
+                    data = sensors["Gyro"][:,0]
+                    plot_graph(data, 1/GYROSCOPE_UPDATE_FREQ, tf, var_ax, "Gyro", names[i])             
+                if i == 4:
+                    data = sensors["Gyro"][:,1]
+                    plot_graph(data, 1/GYROSCOPE_UPDATE_FREQ, tf, var_ax, "Gyro", names[i])        
+                if i == 5:
+                    data = sensors["Gyro"][:,2]
+                    plot_graph(data, 1/GYROSCOPE_UPDATE_FREQ, tf, var_ax, "Gyro", names[i])                
 
     plt.subplots_adjust(wspace=0.5, hspace=0.5)
 

@@ -98,7 +98,7 @@ COMPONENTS = [
 ]
 
 # Sensors
-ACCELEROMETER_SIGMA = 0.001
+ACCELEROMETER_SIGMA = 0.1
 ACCELEROMETER_MU = 0.0
 ACCELEROMETER_UPDATE_FREQ = 100 #hertz
 
@@ -113,13 +113,13 @@ MAGNETOMETER_MU = 0.000
 MAGNETOMETER_UPDATE_FREQ = 100 #hertz
 
 # Barometer
-BAROMETER_SIGMA = 0.001
+BAROMETER_SIGMA = 1
 BAROMETER_MU = 0.000
 BAROMETER_UPDATE_FREQ = 100 #hertz
 
 # GPS
-GPS_SIGMA = 0.05 # Assuming "10mm accuracy" from spec sheet is refering to it's standard deviation. Add margin
-GPS_MU = 0 # Not biased so far as we can tell
-GPS_UPDATE_FREQ = 10 #hertz KEEP THIS CONSTANT
+GPS_SIGMA = 0.1 
+GPS_MU = 0 
+GPS_UPDATE_FREQ = 5 #hertz
 
 

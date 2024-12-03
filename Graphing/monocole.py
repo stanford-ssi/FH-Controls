@@ -6,6 +6,7 @@ from matplotlib.widgets import Slider
 from Simulator.simulationConstants import *
 import matplotlib.patches as patches
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+from matplotlib.animation import FuncAnimation
 import random
 
 
@@ -59,6 +60,15 @@ def plotVectorsOverTime(position, bodyAxesX, bodyAxesY, bodyAxesZ, engine_thrust
         fig.canvas.draw_idle()
 
     slider.on_changed(update)
+    
+    def animate(i):
+        slider.set_val(slider.val + 1)
+        if slider.val >= slider.valmax:
+            slider.set_val(slider.valmin)
+            
+    ani = FuncAnimation(fig, animate, interval=50, cache_frame_data=False)
+    #ani.save('animation.mp4', writer='ffmpeg', fps=10)
+        
     plt.show()
 
 def extract_columns(matrix):

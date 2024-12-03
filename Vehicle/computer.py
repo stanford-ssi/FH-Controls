@@ -287,14 +287,14 @@ class FlightComputer:
         def _predict_step(x, u, A, B, P_prev, Q, dt):
             """ Prediction step for kalman filter"""
             
-            # It is way too much work to make a state transition model by differentiating the dynamics so we do this instead
+            # It is way too much work to make a state transition model by differentiating the dynamics so do this instead
             F = np.eye(12) + self.A*dt
             
             # If we are off course and requesting a larger throttle do not use the control input in kalman
             if self.get_throttle(self.mass * np.sqrt((u[0] ** 2) + (u[1] ** 2) + (u[2] ** 2))) > 1:
                 u = np.array([0,0,0])
              
-            x_next = F @ x + (B*dt) @ (u - self.linearized_u) # Transition State to next state using our understanding of dynamics.
+            x_next = F @ x #+ (B*dt) @ (u - self.linearized_u) # Transition State to next state using our understanding of dynamics.
             P_next = F @ P_prev @ F.T + Q # Transition estimate covariance to next step
             return x_next, P_next
         
@@ -315,7 +315,7 @@ class FlightComputer:
             return x_fit, P_fit
         
         # Create Process Noise Matrix
-        Q = np.eye(12) * 10
+        Q = np.eye(12)
 
         # H assumes sensor format [x y z xdot ydot zdot z xdot ydot zdot p y r pdot ydot rdot]
         H = np.array([
@@ -338,13 +338,13 @@ class FlightComputer:
         ]) 
     
         R = np.eye(16)
-        R[0,0] = 10
-        R[1,1] = 10
-        R[2,2] = 10
+        R[0,0] = 1
+        R[1,1] = 1
+        R[2,2] = 1
         R[3,3] = 10
         R[4,4] = 10
-        R[5,5] = 100
-        R[6,6] = 10
+        R[5,5] = 10
+        R[6,6] = 200
         
         # Update Step
         x_next, P_next = _predict_step(self.state, self.U, self.A, self.B, self.kalman_P, Q, self.ts)

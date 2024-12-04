@@ -908,6 +908,7 @@ def run_dash(sim, planned_trajectory, trajectory, ts, tf):
                 dcc.Graph(id="Pitch Rate (deg/s) vs Time", figure=sensed_dynamics_roll_rate, style={'width':'32%', 'display': 'inline-block'}),
 
                 #Alpha
+                #NEw line
                 html.H4(children = "Rotational Acceleration"),
                 dcc.Graph(id="Pitch Rate (deg/s) vs Time", figure=sensed_dynamics_pitch_acceleration, style={'width':'32%', 'display': 'inline-block'}),
                 dcc.Graph(id="Pitch Rate (deg/s) vs Time", figure=sensed_dynamics_yaw_acceleration, style={'width':'32%', 'display': 'inline-block'}),

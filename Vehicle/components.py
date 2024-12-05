@@ -3,7 +3,8 @@ class HollowCylinder():
     # Class for the creation of an unchanging hollow cylinder object on the rocket.
     # Component List Structure: [mass, inner radius, outer_radius, length, bottom_z]
 
-    def __init__(self, mass, inner_radius, outer_radius, length, bottom_z):
+    def __init__(self, name, mass, inner_radius, outer_radius, length, bottom_z):
+        self.name = name
         self.mass = mass
         self.inner_radius = inner_radius
         self.outer_radius = outer_radius
@@ -36,7 +37,8 @@ class HollowCylinder():
 class SolidCylinder():
     # Class for the creation of an unchanging solid cylinder object on the rocket.
     # Component List Structure: [mass, radius, length, bottom_z]
-    def __init__(self, mass, radius, length, bottom_z):
+    def __init__(self, name, mass, radius, length, bottom_z):
+        self.name = name
         self.mass = mass
         self.radius = radius
         self.length = length
@@ -69,7 +71,8 @@ class SolidCylinder():
 class ChangingHollowCylinder():
     # Class for the creation of a changing hollow cylinder object on the rocket.
     # Component List Structure: [mass, current_inner_radius, outer_radius, length, bottom_z, original_inner_radius]
-    def __init__(self, mass, current_inner_radius, outer_radius, length, bottom_z, original_inner_radius):
+    def __init__(self, name, mass, current_inner_radius, outer_radius, length, bottom_z, original_inner_radius):
+        self.name = name
         self.mass = mass
         self.current_inner_radius = current_inner_radius
         self.outer_radius = outer_radius
@@ -103,7 +106,8 @@ class ChangingHollowCylinder():
 class ChangingSolidCylinder():
     # Class for the creation of a changing solid cylinder object on the rocket.
     # Component List Structure: [mass, radius, current length, bottom_z, original_length]
-    def __init__(self, mass, radius, current_length, bottom_z, original_length):
+    def __init__(self, name, mass, radius, current_length, bottom_z, original_length):
+        self.name = name
         self.mass = mass
         self.radius = radius
         self.current_length = current_length
@@ -136,7 +140,8 @@ class ChangingSolidCylinder():
 class PointMass():
     # Class for the creation of an unchanging point mass object on the rocket.
     # Component List Structure: [mass, bottom_z]
-    def __init__(self, mass, bottom_z):
+    def __init__(self, name, mass, bottom_z):
+        self.name = name
         self.mass = mass
         self.bottom_z = bottom_z
 

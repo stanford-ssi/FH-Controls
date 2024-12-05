@@ -7,7 +7,7 @@ class LinearActuator:
     def __init__(self, tf, ts):
         # Source: Feiler2003 
         K = 1
-        T = 0.075
+        T = 0.1
 
         # Create Transfer function
         n = [K]
@@ -18,7 +18,13 @@ class LinearActuator:
         self.T  = np.linspace(0, int(tf/ts)*ts, num=int(tf/ts)+1)
         self.U  = np.array([[0.0]])   
 
-    def get_output(self, u_current, t):
+    def refresh(self, K, T):
+        # Create Transfer function
+        n = [K]
+        d = [T, 1]
+        self.sys = signal.TransferFunction(n, d)
+        
+    def send_signal(self, u_current, t):
         if not t == 0:
             self.U = np.append(self.U, u_current)
         tout, y, x = signal.lsim(self.sys, self.U, self.T[:min(enumerate(self.T), key=lambda x: abs(x[1]-t))[0] + 1], self.X)

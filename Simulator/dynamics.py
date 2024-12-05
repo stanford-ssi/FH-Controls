@@ -64,7 +64,7 @@ def full_dynamics(state, rocket, wind, dt, t):
     # Calculate Alphas
     torque = np.array([(T * np.sin(gimbal_psi) * -np.cos(gimbal_theta) * lever_arm) + wind_moment[0],
                         (T * np.sin(gimbal_psi) * -np.sin(gimbal_theta) * lever_arm) + wind_moment[1],
-                        0])
+                        0]) + rocket.engine.I @ rocket.engine.gimbal_alpha # This accounts for torque from the tvc system
     I_dot = (rocket.I - rocket.I_prev) / dt
     alphas = np.dot(np.linalg.inv(rocket.I), torque - np.cross(w, np.dot(rocket.I, w)) - np.dot(I_dot, w))
 
@@ -72,14 +72,11 @@ def full_dynamics(state, rocket, wind, dt, t):
     statedot[9:12] = alphas.tolist()
     
     # Rotational Kinematics
-    statedot[6:9] = get_EA_dot(state)
+    statedot[6:9] = get_EA_dot(state, R, R_inv)
 
     return statedot
 
-def get_EA_dot(state):
-    
-    R = Rotation.from_euler('xyz', [state[7], -state[6], -state[8]]).as_matrix()
-    R_inv = np.linalg.inv(R)
+def get_EA_dot(state, R, R_inv):
     w_gf = np.dot(R_inv, state[9:12])
 
     wx = w_gf[0]
@@ -95,34 +92,3 @@ def get_EA_dot(state):
     
     return [pitchdot, yawdot, rolldot]
  
-def accelerations_2_actuator_positions(U_gf, rocket, t):
-    """ Convert control input to engine position and throttle
-    
-    Inputs:
-    - Control input in global frame (1x3)
-    - rocket object
-    - current time
-    
-    Output:
-    - pos_x, the x position of the engine
-    - pos_y, the y position of the engine
-    - throttle, the throttle percent of the engine
-    """
-    # Rotate into rocket frame
-    U = np.dot(rocket.R, U_gf) 
-    gimbal_theta = np.arctan2(-U[1], -U[0])
-    gimbal_psi = np.arctan2(np.sqrt((U[1] ** 2) + (U[0] ** 2)), U[2])
-    T = rocket.mass * np.sqrt((U[0] ** 2) + (U[1] ** 2) + (U[2] ** 2))
-    gimbal_r = np.tan(gimbal_psi) * rocket.engine.length
-    if (gimbal_theta < np.pi / 2) and (gimbal_theta > -np.pi / 2):
-        pos_x_commanded = np.sqrt((gimbal_r ** 2) / (1 + (np.tan(gimbal_theta) ** 2)))
-    else:
-        pos_x_commanded = -1 * np.sqrt((gimbal_r ** 2) / (1 + (np.tan(gimbal_theta) ** 2)))
-    pos_y_commanded = pos_x_commanded * np.tan(gimbal_theta)
-    throttle_commanded = rocket.engine.get_throttle(t, T)
-   
-    # Send signal to actuator
-    pos_x = rocket.actuator_X.get_output(pos_x_commanded, t)
-    pos_y = rocket.actuator_Y.get_output(pos_y_commanded, t)
-    
-    return pos_x, pos_y, throttle_commanded

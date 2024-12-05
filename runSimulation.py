@@ -16,8 +16,5 @@ trajectory = sim.propogate()
 sim.display_end_info()
 
 # Graphs
-##create_gui(sim, planned_trajectory, trajectory, TIMESTEP, sim.previous_time)
 run_dash(sim, planned_trajectory, trajectory, TIMESTEP, sim.previous_time)
-
-
-#plot_frames_over_time(sim)
+plot_frames_over_time(sim)

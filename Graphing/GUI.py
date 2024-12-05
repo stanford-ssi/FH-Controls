@@ -31,12 +31,21 @@ def pull_dynamics(trajectory, ts, tf):
     t = np.linspace(0, tf, int(tf/ts)+1)
 
     # differentiates velocity for x, y, z acceleration
-    x_acc = np.diff(x_vel) / np.diff(t[0:len(x_vel)])
-    y_acc = np.diff(y_vel) / np.diff(t[0:len(y_vel)])
-    z_acc = np.diff(z_vel) / np.diff(t[0:len(z_vel)])
-    x_alpha = np.diff(omega_x) / np.diff(t[0:len(omega_x)])
-    y_alpha = np.diff(omega_y) / np.diff(t[0:len(omega_y)])
-    z_alpha = np.diff(omega_z) / np.diff(t[0:len(omega_z)])
+    try:
+        x_acc = np.diff(x_vel) / np.diff(t[0:len(x_vel)])
+        y_acc = np.diff(y_vel) / np.diff(t[0:len(y_vel)])
+        z_acc = np.diff(z_vel) / np.diff(t[0:len(z_vel)])
+        x_alpha = np.diff(omega_x) / np.diff(t[0:len(omega_x)])
+        y_alpha = np.diff(omega_y) / np.diff(t[0:len(omega_y)])
+        z_alpha = np.diff(omega_z) / np.diff(t[0:len(omega_z)])
+    except:
+        x_acc = np.diff(x_vel[0:-1]) / np.diff(t[0:len(x_vel)])
+        y_acc = np.diff(y_vel[0:-1]) / np.diff(t[0:len(y_vel)])
+        z_acc = np.diff(z_vel[0:-1]) / np.diff(t[0:len(z_vel)])
+        x_alpha = np.diff(omega_x[0:-1]) / np.diff(t[0:len(omega_x)])
+        y_alpha = np.diff(omega_y[0:-1]) / np.diff(t[0:len(omega_y)])
+        z_alpha = np.diff(omega_z[0:-1]) / np.diff(t[0:len(omega_z)])
+        
 
     return [x_pos, y_pos, z_pos, x_vel, y_vel, z_vel, x_acc, y_acc, z_acc, theta_x, theta_y, theta_z, omega_x, omega_y, omega_z, x_alpha, y_alpha, z_alpha]
 
@@ -220,8 +229,8 @@ def create_gui(sim, planned_trajectory, trajectory, ts, tf):
 
     # Altitude vs Time
     tab0 = ttk.Frame(notebook)
-    legend = ["Truth", "ffc"]
-    create_graph_set(tab0, [[sim.rocket.state_history[:,2]], [sim.rocket.ffc.state_history[:,2]]], ts, tf, ["Altitude"], 1, legend, multiple_on_one_graph=True)
+    legend = ["Truth", "ffc", "ideal"]
+    create_graph_set(tab0, [[sim.rocket.state_history[:,2]], [sim.rocket.ffc.state_history[:,2]], [sim.ideal_trajectory[:,2]]], ts, tf, ["Altitude"], 1, legend, multiple_on_one_graph=True)
     notebook.add(tab0, text="Altitude")
 
     # Position Error

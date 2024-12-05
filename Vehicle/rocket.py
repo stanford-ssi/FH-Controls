@@ -18,12 +18,13 @@ class Rocket:
         # Create Engine Object inside Rocket
         self.dt = simulation_timestep
         self.engine = Vehicle.engine.Engine(simulation_timestep)
-        self.mass_noEngine = Vehicle.rocketConstants.ROCKET_MASS_WITHOUT_ENGINE
-        self.mass = Vehicle.rocketConstants.ROCKET_MASS_TOTAL  # Rocket Starts Fully Fueled
-        self.massHistory = np.empty(shape=(0))
 
         # Pull Components List and Build rocket
         self.components = self.build_rocket(Vehicle.rocketConstants.COMPONENTS)
+
+        # Establish mass, mass_noEngine (Non-changing mass), and mass history.
+        self.massHistory = np.empty(shape=(0))
+        self.mass, self.mass_noEngine = self.calculate_masses(self.components)
 
         # Find Cg and Cp locations, measured from top of rocket
         self.com = self.calculate_com()
@@ -36,7 +37,7 @@ class Rocket:
         
         # Initialize the rocket's rotation matrix
         self.R_history = np.array([Rotation.from_euler('xyz', [starting_state[7], -starting_state[6], -starting_state[8]]).as_matrix()])
-        self.R = None
+        self.R = np.eye(3)
         
         # Truth States and Histories
         self.state = roll_injection(starting_state)
@@ -63,35 +64,47 @@ class Rocket:
     def build_rocket(self, components):
         ''' Takes in list of parts from rocket constants and build rocket'''
         new_components = []
-        mass_check = 0
         for component in components:
             if component['type'] == 'HollowCylinder':
                 new_component = HollowCylinder(
-                    component['mass'], component['inner_radius'], component['outer_radius'], component['length'], component['bottom_z'])
-                mass_check += component['mass']
+                    component['name'], component['mass'], component['inner_radius'], component['outer_radius'], component['length'], component['bottom_z'])
             if component['type'] == 'SolidCylinder':
                 new_component = SolidCylinder(
-                    component['mass'], component['radius'], component['length'], component['bottom_z'])
-                mass_check += component['mass']
+                    component['name'], component['mass'], component['radius'], component['length'], component['bottom_z'])
             if component['type'] == 'ChangingHollowCylinder':
-                new_component = ChangingHollowCylinder(component['start_mass'], component['start_inner_radius'],
+                new_component = ChangingHollowCylinder(component['name'], component['start_mass'], component['start_inner_radius'],
                                                        component['outer_radius'], component['length'], component['bottom_z'], component['start_inner_radius'])
-                mass_check += component['start_mass']
             if component['type'] == 'ChangingSolidCylinder':
                 new_component = ChangingSolidCylinder(
-                    component['start_mass'], component['radius'], component['start_length'], component['bottom_z'], component['start_length'])
-                mass_check += component['start_mass']
+                    component['name'], component['start_mass'], component['radius'], component['start_length'], component['bottom_z'], component['start_length'])
             if component['type'] == 'PointMass':
                 new_component = PointMass(
-                    component['mass'], component['bottom_z'])
-                mass_check += component['mass']
+                    component['name'], component['mass'], component['bottom_z'])
             new_components.append(new_component)
-        if not round(mass_check, 2) == round(self.mass, 2):
-            print('Rocket Mass: %d' % self.mass)
-            print('Sum of Components Mass: %d' % mass_check)
-            raise ValueError(
-                'Rocket Component Masses do not sum to total rocket mass! Check rocketConstants File!!')
         return new_components
+    
+    def calculate_masses(self, comps):
+        total_mass = 0
+        non_fuel_mass = 0
+
+        for component in comps:
+            # Check if the component has a `start_mass` attribute
+            if hasattr(component, 'start_mass'):
+                total_mass += component.start_mass  # For changing components
+            elif hasattr(component, 'mass'):
+                total_mass += component.mass  # For fixed components
+            else:
+                raise ValueError(f"Component {component} missing 'mass' or 'start_mass' attribute.")
+
+            # Check if the component has a 'static' attribute and if it's True
+            if getattr(component, 'static', False):
+                if hasattr(component, 'start_mass'):
+                    non_fuel_mass += component.start_mass
+                elif hasattr(component, 'mass'):
+                    non_fuel_mass += component.mass
+
+        return total_mass, non_fuel_mass
+
 
     def calculate_com(self):
         """
@@ -114,7 +127,6 @@ class Rocket:
 
     def update_truth_side(self, t, ts, current_step):
         ''' Run all the functions needed to update the rocket at a new timestep'''
-        
         self.state_history = np.vstack([self.state_history, self.state])   
         
         # Log Rocket Rotation                  
@@ -125,23 +137,26 @@ class Rocket:
         state_error = self.state - self.ideal_trajectory[current_step]
         self.error_history = np.vstack([self.error_history, state_error])            
         
-        # Convert desired accelerations to throttle and gimbal angles
-        pos_x, pos_y, throttle = accelerations_2_actuator_positions(self.ffc.U, self, t)
+        # Send signal to actuator
+        self.engine.posx = self.actuator_X.send_signal(self.ffc.posx, t)
+        self.engine.posy = self.actuator_Y.send_signal(self.ffc.posy, t)
+        self.engine.throttle = self.ffc.throttle 
+        self.engine.gimbal_psi, self.engine.gimbal_theta = self.convert_engine_pos_2_angle()
         
         # Inject Error to actuator positions
-        pos_x, pos_y, throttle = actuator_error_injection(pos_x, pos_y, throttle)
-                    
+        self.engine.posx, self.engine.posy, self.engine.throttle = actuator_error_injection(self.engine.posx, self.engine.posy, self.engine.throttle)
+
         # Perform actuator constraint checks
         if not t == 0:
-            throttle = throttle_checks(throttle, self.engine.throttle_history[-1], ts)
-            pos_x = pos_checks(pos_x, self.engine.posx_history[-1], ts)
-            pos_y = pos_checks(pos_y, self.engine.posy_history[-1], ts)
+            self.engine.throttle = throttle_checks(self.engine.throttle, self.engine.throttle_history[-1], ts)
+            self.engine.posx = pos_checks(self.engine.posx, self.engine.posx_history[-1], ts)
+            self.engine.posy = pos_checks(self.engine.posy, self.engine.posy_history[-1], ts)
         
         self.update_fuels()
-        self.engine.save_throttle(throttle)
-        self.engine.save_posX(pos_x)
-        self.engine.save_posY(pos_y)
-        self.engine.save_thrust(self.engine.get_thrust(t, throttle))
+        self.engine.save_throttle(self.engine.throttle)
+        self.engine.save_engine_positions()
+        self.engine.calculate_angular_rates(t)
+        self.engine.save_thrust(self.engine.get_thrust(t, self.engine.throttle))
     
     def update_fuels(self):
         """ Remove the fuel used in the timestep from the tanks """
@@ -158,13 +173,14 @@ class Rocket:
         
         # Save necessary information
         self.update_mass()
-        self.update_I()    
+        self.update_I()
+        self.update_engine_I() 
     
     def update_mass(self):
         """ Update the rocket mass
         """
         self.engine.mass -= (self.engine.thrust * self.engine.throttle / self.engine.exhaust_velocity) * self.dt
-        self.mass = self.mass_noEngine + self.engine.mass
+        self.mass -= (self.engine.thrust * self.engine.throttle / self.engine.exhaust_velocity) * self.dt
         self.massHistory = np.append(self.massHistory, self.mass)
 
     def update_I(self):
@@ -241,3 +257,31 @@ class Rocket:
         moment = [Mx, My, 0]
         return moment
 
+    def convert_engine_pos_2_angle(self):
+        length = self.engine.length
+        gimbal_r = np.sqrt(self.engine.posx ** 2 + self.engine.posy ** 2)
+        
+        gimbal_psi = np.arctan2(gimbal_r, length)
+        gimbal_theta = np.arctan2(self.engine.posy, self.engine.posx)
+        return gimbal_psi, gimbal_theta
+    
+    def update_engine_I(self):
+        engine_moving_components = ['fuel_grain', 'combustion_chamber'] 
+        
+        # MOI in xy
+        tot_moi_xy = 0
+        for component in self.components:
+            if component.name in engine_moving_components:
+                tot_moi_xy += component.moment_of_inertia_xy() + (component.center_of_mass()[1] * (component.center_of_mass()[0] ** 2))
+
+        # MOI in z
+        tot_moi_z = 0
+        for component in self.components:
+            if component.name in engine_moving_components:
+                tot_moi_z += component.moment_of_inertia_z()
+                
+        # Update I and I_prev
+        self.engine.I = np.array([[tot_moi_xy, 0, 0],
+                            [0, tot_moi_xy, 0],
+                            [0, 0, tot_moi_z]])
+        

@@ -12,16 +12,18 @@ from Simulator.errorInjection import *
 from Simulator.simulationConstants import GRAVITY as g
 from Simulator.simulationConstants import RHO as rho
 from scipy.spatial.transform import Rotation
+from Vehicle.ActuatorModel import *
 from termcolor import colored
 
 class Simulation:
     """ Class Representing the Simulation and associated data"""
-    def __init__(self, timefinal, simulation_timestep, starting_state, wind, planned_trajectory):
+    def __init__(self, timefinal, simulation_timestep, starting_state, wind, planned_trajectory):                      
         
         # Create Rocket Object
         self.rocket = Vehicle.rocket.Rocket(simulation_timestep, planned_trajectory, starting_state)
         self.ideal_trajectory = planned_trajectory
         self.state = roll_injection(starting_state)
+        self.starting_state = starting_state
         
         # Simulation Variables
         self.ts = simulation_timestep
@@ -34,7 +36,7 @@ class Simulation:
         # Initialize situation
         self.wind_history = np.empty((0,len(wind)))
         self.base_wind = np.array([np.random.normal(0, wind[0]), np.random.normal(0, wind[1]), np.random.normal(0, wind[2])])
-        self.current_wind = self.base_wind
+        self.current_wind = self.base_wind                     
 
     def propogate(self):
         """ Simple propogator
@@ -60,7 +62,7 @@ class Simulation:
 
         # Propogate given ODE, stop when rocket crashes as indicated by this here event function
         def event(t,y,r,it,tt):
-            if t < 10 * ts: # Prevent from thinking it's crashed when sitting on ground on first 10 time steps
+            if t < 20 * ts: # Prevent from thinking it's crashed when sitting on ground on first 10 time steps
                 return 1
             else:
                 if self.landed == True:

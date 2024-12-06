@@ -17,4 +17,4 @@ sim.display_end_info()
 
 # Graphs
 run_dash(sim, planned_trajectory, trajectory, TIMESTEP, sim.previous_time)
-plot_frames_over_time(sim)
+#plot_frames_over_time(sim)

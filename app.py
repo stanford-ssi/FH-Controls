@@ -74,6 +74,7 @@ def run_dash(sim, planned_trajectory, trajectory, ts, tf):
                     "Gyro": sensed_state_history[:,13:16] * RAD2DEG}
         return positional, rotational
     sensed_positional_dynamics, sensed_rotational_dynamics = pull_sensed_dynamics(sim.rocket.ffc.sensed_state_history, ts, tf)
+
     data = pd.DataFrame(
         {
             "time": np.linspace(0, tf, t_length),
@@ -904,15 +905,15 @@ def run_dash(sim, planned_trajectory, trajectory, ts, tf):
                 #Omega
                 html.H4(children = 'Rotation Rate'),
                 dcc.Graph(id="Pitch Rate (deg/s) vs Time", figure=sensed_dynamics_pitch_rate, style={'width':'32%', 'display': 'inline-block'}),
-                dcc.Graph(id="Pitch Rate (deg/s) vs Time", figure=sensed_dynamics_yaw_rate, style={'width':'32%', 'display': 'inline-block'}),
-                dcc.Graph(id="Pitch Rate (deg/s) vs Time", figure=sensed_dynamics_roll_rate, style={'width':'32%', 'display': 'inline-block'}),
+                dcc.Graph(id="Yaw Rate (deg/s) vs Time", figure=sensed_dynamics_yaw_rate, style={'width':'32%', 'display': 'inline-block'}),
+                dcc.Graph(id="Roll Rate (deg/s) vs Time", figure=sensed_dynamics_roll_rate, style={'width':'32%', 'display': 'inline-block'}),
 
                 #Alpha
                 #NEw line
                 html.H4(children = "Rotational Acceleration"),
-                dcc.Graph(id="Pitch Rate (deg/s) vs Time", figure=sensed_dynamics_pitch_acceleration, style={'width':'32%', 'display': 'inline-block'}),
-                dcc.Graph(id="Pitch Rate (deg/s) vs Time", figure=sensed_dynamics_yaw_acceleration, style={'width':'32%', 'display': 'inline-block'}),
-                dcc.Graph(id="Pitch Rate (deg/s) vs Time", figure=sensed_dynamics_roll_acceleration, style={'width':'32%', 'display': 'inline-block'}),
+                dcc.Graph(id="Alpha X (deg/s) vs Time", figure=sensed_dynamics_pitch_acceleration, style={'width':'32%', 'display': 'inline-block'}),
+                dcc.Graph(id="Alpha Y (deg/s) vs Time", figure=sensed_dynamics_yaw_acceleration, style={'width':'32%', 'display': 'inline-block'}),
+                dcc.Graph(id="Alpha Z (deg/s) vs Time", figure=sensed_dynamics_roll_acceleration, style={'width':'32%', 'display': 'inline-block'}),
 
                 
 
@@ -922,4 +923,4 @@ def run_dash(sim, planned_trajectory, trajectory, ts, tf):
         ]
     )
 
-    app.run(debug=True)
+    app.run(debug=False)

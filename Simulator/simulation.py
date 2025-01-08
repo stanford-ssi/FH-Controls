@@ -36,26 +36,7 @@ class Simulation:
         self.wind_history = np.empty((0,len(wind)))
         self.base_wind = np.array([np.random.normal(0, wind[0]), np.random.normal(0, wind[1]), np.random.normal(0, wind[2])])
         self.current_wind = self.base_wind                     
-
-
-    def atrributes(self):
-        return {
-            "Altitude History": self.rocket.state_history[:, 2],
-            "Altitude FFC History": self.rocket.ffc.state_history[:, 2],
-            "X Truth position_error": self.rocket.error_history[:, 0],
-            "Y Truth position error":self.rocket.error_history[:, 1],
-            "Z Truth position error": self.rocket.error_history[:, 2],
-            "X FFC position error": self. rocket.ffc.error_history[:, 0],
-            "Y FFC position_error": self.rocket.ffc.error_history[:, 1],
-            "Z FFC position_error": self.rocket.ffc.error_history[:, 2],
-            "Pitch Truth Error": self.rocket.error_history[:,6] * RAD2DEG,
-            "Yaw Truth Error": self.rocket.error_history[:,7] * RAD2DEG,
-            "Roll Truth Error": self.rocket.error_history[:,8] * RAD2DEG,
-            "Pitch FFC Error": self.rocket.ffc.error_history[:,6] * RAD2DEG,
-            "Yaw FFC Error": self.rocket.ffc.error_history[:,7] * RAD2DEG,
-            "Roll FFC Error": self.rocket.ffc.error_history[:,8] * RAD2DEG
-            }   
-    
+        
     def propogate(self):
         """ Simple propogator
 

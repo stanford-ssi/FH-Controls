@@ -57,7 +57,7 @@ Tk().withdraw()
 file_path = asksaveasfilename(
     defaultextension=".csv",
     filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
-    title="Choose location to save your file"
+    title= "Choose location to save your file"
 )
 if file_path:
     shutil.move("attributes.csv", file_path)

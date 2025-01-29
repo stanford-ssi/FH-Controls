@@ -62,12 +62,37 @@ class FlightComputer:
         self.burn_duration =  Vehicle.engineConstants.ENGINE_BURN_DURATION
         self.thrust_curve = Vehicle.engineConstants.THRUST_CURVE
         self.dt_thrust_curve = Vehicle.engineConstants.DT_THRUST_CURVE
-               
+        self.total_impulse = self.get_total_impulse()
+
+        self.starting_fuel_mass = self.rocket_knowledge.engine.full_mass - self.rocket_knowledge.engine.drymass #prop mass @ t = 0 | Can be replaced by a real value later
+    
+    def get_total_impulse(self):
+        """retrieves total impulse by taking the integral of the thrust curve"""
+        sum = 0
+
+        for i in self.thrust_curve:
+            sum += i * self.dt_thrust_curve
+
+        return sum
+    
+    def update_mass(self, t):
+        """updates the mass
+        takes time, t, as an arguement in order to calculate where we are on the thrust curve"""
+
+        try: #gathering the thurst value at time t. Should be cleaned up when we get a real thrust curve and throttle/thrust relationship can be worked out
+            tempThrustCurve = self.thrust_curve[int(t/self.dt_thrust_curve)]
+        except:
+            tempThrustCurve = self.thrust_curve[-1]
+
+        self.mass -= self.throttle * tempThrustCurve * self.ts * self.starting_fuel_mass / self.total_impulse
+
+        return
+    
     def rocket_loop(self, t, current_step):
         
         self.t = t
-        
-        self.mass = self.rocket_knowledge.mass
+
+        self.update_mass(t)
         self.com = self.rocket_knowledge.com
         self.I = self.rocket_knowledge.I
         self.I_prev = self.rocket_knowledge.I_prev

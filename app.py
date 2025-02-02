@@ -94,6 +94,7 @@ def run_dash(sim, planned_trajectory, trajectory, ts, tf):
             "Roll FFC Error": sim.rocket.ffc.error_history[:,8] * RAD2DEG,
             "Gimbal Theta": np.arctan2(sim.rocket.engine.posy_history, sim.rocket.engine.posx_history) * RAD2DEG,
             "Gimbal Psi": np.arctan2(np.sqrt((sim.rocket.engine.posx_history ** 2) + (sim.rocket.engine.posy_history ** 2)), sim.rocket.engine.length) * RAD2DEG,
+            "Gimbal Alpha": sim.rocket.engine.gimbal_alpha_history,
             "Throttle": sim.rocket.engine.throttle_history,
             "Gimbal X Position": sim.rocket.engine.posx_history,
             "Gimbal Y Position":sim.rocket.engine.posy_history,
@@ -296,6 +297,16 @@ def run_dash(sim, planned_trajectory, trajectory, ts, tf):
         title = "PosY (m) vs. Time",
         labels={
             'value': 'PosY (m)', 'time':'Time'
+        }
+    )
+    
+    gimbalAlpha = px.line(
+        data,
+        x="time",
+        y = ["Gimbal Alpha"],
+        title = "Engine Angular Acceleration vs Time",
+        labels={
+            'value': 'Angular Acceleration (rad/s^2)', 'time':'Time'
         }
     )
 
@@ -785,6 +796,11 @@ def run_dash(sim, planned_trajectory, trajectory, ts, tf):
                     dcc.Graph(id="Gimbal Psi (degreens) vs Time", figure=gimbal_psi, style={'width':'32%', 'display': 'inline-block'}),
                     dcc.Graph(id="Gimbal Theta (degreens) vs Time", figure=gimbal_theta, style={'width':'32%', 'display': 'inline-block'}),
                     dcc.Graph(id="Throttle Percent vs. Time", figure=throttle, style={'width':'32%', 'display': 'inline-block'}),
+                ], className="row"),
+                
+                html.H2(children='Engine Torque Info'),
+                html.Div([
+                dcc.Graph(id="Engine Angular Acceleration (rad/s^2) vs Time", figure=gimbalAlpha, style={'width':'50%', 'display': 'inline-block'}),
                 ], className="row"),
 
                 #GIMBAL POSTINGS

@@ -26,6 +26,7 @@ class Engine:
         self.gimbal_theta_history = np.empty(shape=(0))
         self.gimbal_theta = 0
         self.gimbal_alpha = np.array([0,0,0])
+        self.gimbal_alpha_history = np.empty(shape=(0))
 
         # Masses
         self.drymass = Vehicle.engineConstants.ENGINE_DRYMASS
@@ -74,6 +75,7 @@ class Engine:
         self.posy_history = np.append(self.posy_history, self.posy)
         self.gimbal_psi_history = np.append(self.gimbal_psi_history, self.gimbal_psi)
         self.gimbal_theta_history = np.append(self.gimbal_theta_history, self.gimbal_theta)
+        self.gimbal_alpha_history = np.append(self.gimbal_alpha_history, np.linalg.norm(self.gimbal_alpha))
         
     def save_thrust(self, thrust):
         """ Takes in the current Thrust and saves it into the thrust history"""

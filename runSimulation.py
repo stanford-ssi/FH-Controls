@@ -15,6 +15,8 @@ sim = Simulation(FINAL_TIME, TIMESTEP, INITIAL_STATE, WIND, planned_trajectory)
 trajectory = sim.propogate()
 sim.display_end_info()
 
+print(len(sim.rocket.engine.gimbal_alpha_history))
+print(len(sim.rocket.engine.posx_history))
 # Graphs
 run_dash(sim, planned_trajectory, trajectory, TIMESTEP, sim.previous_time)
 #plot_frames_over_time(sim)

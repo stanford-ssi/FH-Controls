@@ -8,6 +8,8 @@ import Vehicle.engineConstants
 from copy import deepcopy
 import control
 import math
+import Vehicle.rocketConstants
+from Vehicle.components import *
 
 class FlightComputer:
     """ Class Representing the FlightComputer and associated data"""
@@ -64,8 +66,35 @@ class FlightComputer:
         self.dt_thrust_curve = Vehicle.engineConstants.DT_THRUST_CURVE
         self.total_impulse = self.get_total_impulse()
 
+        # Mass values
         self.starting_fuel_mass = self.rocket_knowledge.engine.full_mass - self.rocket_knowledge.engine.drymass #prop mass @ t = 0 | Can be replaced by a real value later
         self.throttle_time = 0
+
+        #Components for COM calculations
+        self.components = self.build_components(Vehicle.rocketConstants.COMPONENTS)
+        
+
+    def build_components(self, components): #same as build_rocet in rocket.py
+        ''' Takes in list of parts from rocket constants and build rocket'''
+        new_components = []
+        for component in components:
+            if component['type'] == 'HollowCylinder':
+                new_component = HollowCylinder(
+                    component['name'], component['mass'], component['inner_radius'], component['outer_radius'], component['length'], component['bottom_z'])
+            if component['type'] == 'SolidCylinder':
+                new_component = SolidCylinder(
+                    component['name'], component['mass'], component['radius'], component['length'], component['bottom_z'])
+            if component['type'] == 'ChangingHollowCylinder':
+                new_component = ChangingHollowCylinder(component['name'], component['start_mass'], component['start_inner_radius'],
+                                                       component['outer_radius'], component['length'], component['bottom_z'], component['start_inner_radius'])
+            if component['type'] == 'ChangingSolidCylinder':
+                new_component = ChangingSolidCylinder(
+                    component['name'], component['start_mass'], component['radius'], component['start_length'], component['bottom_z'], component['start_length'])
+            if component['type'] == 'PointMass':
+                new_component = PointMass(
+                    component['name'], component['mass'], component['bottom_z'])
+            new_components.append(new_component)
+        return new_components
     
     def get_total_impulse(self):
         """retrieves total impulse by taking the integral of the thrust curve"""
@@ -89,14 +118,63 @@ class FlightComputer:
 
         return
     
+    def update_com(self):
+        """
+        updates center of mass of the rocket 
+        """
+
+        total_mass_times_distance = 0
+        total_mass = 0
+        for component in self.components:
+            # 2-element list, [Z-Coordinate of center of mass, mass]
+            individual_com = component.center_of_mass()
+            # numerator
+            total_mass_times_distance += individual_com[0] * individual_com[1]
+            # add mass to total mass, denominator
+            total_mass += individual_com[1]
+        rocket_center_of_mass = total_mass_times_distance / \
+            total_mass  # calculate overall center-of-mass
+        
+        self.com = rocket_center_of_mass
+        return 
+    
+    def update_I(self):
+        overall_com = self.com
+        
+        first_pass = False
+        try:
+            old_I = self.I
+        except:
+            first_pass = True
+            
+        # MOI in xy
+        tot_moi_xy = 0
+        for component in self.components:
+            difference = abs(overall_com - component.center_of_mass()[0])
+            tot_moi_xy += component.moment_of_inertia_xy() + (component.center_of_mass()[1] * (difference ** 2))
+
+        # MOI in z
+        tot_moi_z = 0
+        for component in self.components:
+            tot_moi_z += component.moment_of_inertia_z()
+        
+        # Update I and I_prev
+        self.I = np.array([[tot_moi_xy, 0, 0],
+                            [0, tot_moi_xy, 0],
+                            [0, 0, tot_moi_z]])
+        if first_pass:
+            self.I_prev = self.I
+        else:
+            self.I_prev = old_I    
+        
+         
     def rocket_loop(self, t, current_step):
         
         self.t = t
 
         self.update_mass()
-        self.com = self.rocket_knowledge.com
-        self.I = self.rocket_knowledge.I
-        self.I_prev = self.rocket_knowledge.I_prev
+        self.update_com()
+        self.update_I()
         
         # Log Rocket Rotation                  
         self.R = Rotation.from_euler('xyz', [self.state[7], -self.state[6], -self.state[8]]).as_matrix()
